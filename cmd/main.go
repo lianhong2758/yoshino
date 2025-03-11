@@ -1,7 +1,6 @@
 package main
 
 import (
-
 	"image"
 	"log"
 
@@ -13,7 +12,7 @@ import (
 func main() {
 	ebiten.SetWindowSize(yoshino.Width, yoshino.Height)
 	ebiten.SetWindowTitle("yoshino(GAL)")
-	icon, _, err := ebitenutil.NewImageFromFile("../data/icon.jpg")
+	icon, _, err := ebitenutil.NewImageFromFile("../file/icon.jpg")
 	if err != nil {
 		log.Println("load icon err:", err)
 	} else {
