@@ -2,6 +2,7 @@ package yoshino
 
 import (
 	"bytes"
+	"image/color"
 	"log"
 	"os"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/lianhong2758/yoshino/file"
 )
 
@@ -19,13 +21,14 @@ type MenuUI struct {
 }
 
 func (m *MenuUI) Init(g *Game) {
-	//	img, _, err := ebitenutil.NewImageFromFile("../data/menu.jpg")
-	img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial("menu.jpg")))
-	if err != nil {
-		log.Println(err)
-		return
+	for _, v := range []string{"menu.jpg"} {
+		img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(v)))
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		m.MenuFile = append(m.MenuFile, img)
 	}
-	m.MenuFile = append(m.MenuFile, img)
 	//根容器使用锚点布局
 	rootContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
@@ -34,10 +37,10 @@ func (m *MenuUI) Init(g *Game) {
 	m.btns = append(m.btns,
 		//开始游戏
 		widget.NewButton(
-			widget.ButtonOpts.Image(LoadButtonImage()),
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
 			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("新的游戏", g.FontFace[0], LoadButtonTextColor()),
+			widget.ButtonOpts.Text("新的游戏", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
 			widget.ButtonOpts.TextPadding(widget.Insets{
 				Left:   30,
@@ -65,10 +68,10 @@ func (m *MenuUI) Init(g *Game) {
 		),
 		//继续游戏
 		widget.NewButton(
-			widget.ButtonOpts.Image(LoadButtonImage()),
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
 			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("加载游戏", g.FontFace[0], LoadButtonTextColor()),
+			widget.ButtonOpts.Text("加载游戏", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
 			widget.ButtonOpts.TextPadding(widget.Insets{
 				Left:   30,
@@ -96,10 +99,10 @@ func (m *MenuUI) Init(g *Game) {
 		),
 		//设置
 		widget.NewButton(
-			widget.ButtonOpts.Image(LoadButtonImage()),
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
 			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("设置", g.FontFace[0], LoadButtonTextColor()),
+			widget.ButtonOpts.Text("设置", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
 			widget.ButtonOpts.TextPadding(widget.Insets{
 				Left:   30,
@@ -127,10 +130,10 @@ func (m *MenuUI) Init(g *Game) {
 		),
 		//退出
 		widget.NewButton(
-			widget.ButtonOpts.Image(LoadButtonImage()),
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
 			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("退出游戏", g.FontFace[0], LoadButtonTextColor()),
+			widget.ButtonOpts.Text("退出游戏", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
 			widget.ButtonOpts.TextPadding(widget.Insets{
 				Left:   30,
@@ -162,10 +165,10 @@ func (m *MenuUI) Init(g *Game) {
 	grid := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
 			widget.GridLayoutOpts.Columns(1),      // 单列布局
-			widget.GridLayoutOpts.Spacing(10, 10), // 按钮间距 5px
+			widget.GridLayoutOpts.Spacing(50, 50), // 按钮间距 5px
 		)),
 		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(200, 100), // 设置最小宽度 100px
+			widget.WidgetOpts.MinSize(400, 300), // 设置最小宽度
 		),
 	)
 	// 添加按钮到网格
@@ -198,7 +201,21 @@ func (m *MenuUI) Clear(g *Game) {
 func (m *MenuUI) Update(g *Game) { m.ui.Update() }
 func (m *MenuUI) Draw(g *Game, screen *ebiten.Image) {
 	//背景图层
-	screen.DrawImage(m.MenuFile[0], DrawImageCentreOption(m.MenuFile[0]))
-	//操作图层
+	screen.DrawImage(m.MenuFile[0], DrawBackgroundOption(m.MenuFile[0]))
+	// //标题
+	// op := &ebiten.DrawImageOptions{}
+	// scaleFactor := float64(Width/3) / float64(m.MenuFile[1].Bounds().Dx())
+	// op.GeoM.Scale(scaleFactor, scaleFactor)
+	// op.GeoM.Translate(
+	// 	200, 100,
+	// )
+	// op.ColorScale.ScaleAlpha(0.8) //  // 调整透明度
+	// screen.DrawImage(m.MenuFile[1], op)
+
+	op := &text.DrawOptions{}
+	op.GeoM.Translate(200, 100)
+	op.ColorScale.ScaleWithColor(color.RGBA{32, 178, 170, 240})
+	text.Draw(screen, "Yoshino", g.FontFace[1].Face(150), op)
+
 	m.ui.Draw(screen)
 }

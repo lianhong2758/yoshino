@@ -31,8 +31,10 @@ func (t *TitleUI) Init(g *Game) {
 	}
 	t.TitleFile = append(t.TitleFile, img2)
 	//加载字体
-	f, _ := LoadFont(file.MaoKenTTF, 20)
+	f, _ := LoadFont(file.MaoKenTTF)
 	g.FontFace = append(g.FontFace, f)
+	f2, _ := LoadFont(file.StlitiTTF)
+	g.FontFace = append(g.FontFace, f2)
 	//计算开屏时间需要
 	g.startTime = time.Now()
 }
@@ -59,7 +61,7 @@ func (ti *TitleUI) Draw(g *Game, screen *ebiten.Image) {
 	alpha := t
 	var op *ebiten.DrawImageOptions
 	if i == 0 {
-		op = DrawImageCentreOption(ti.TitleFile[i])
+		op = DrawBackgroundOption(ti.TitleFile[i])
 		op.ColorScale.ScaleAlpha(float32(alpha)) //  // 调整透明度
 	} else {
 		screen.Fill(color.White)

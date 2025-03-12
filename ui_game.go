@@ -40,7 +40,7 @@ type GameUI struct {
 	PlayVideo      func(string)
 
 	AudioContext *audio.Context
-	BgmPlayer    *audio.Player // 背景音乐播放器
+	MusicPlayer  *audio.Player // 背景音乐播放器
 	VoicePlayer  *audio.Player // 语音播放器
 }
 
@@ -56,7 +56,7 @@ func (gu *GameUI) Init(g *Game) {
 	)
 
 	label1 := widget.NewText(
-		widget.TextOpts.Text("", g.FontFace[0], color.Black),
+		widget.TextOpts.Text("", g.FontFace[0].Face(25), color.Black),
 		widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionCenter),
 		widget.TextOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
@@ -97,10 +97,10 @@ func (gu *GameUI) Init(g *Game) {
 	)
 	// 主菜单按钮
 	menubu := widget.NewButton(
-		widget.ButtonOpts.Image(LoadButtonImage()),
+		widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 		// specify the button's text, the font face, and the color
 		//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-		widget.ButtonOpts.Text("主菜单", g.FontFace[0], LoadButtonTextColor()),
+		widget.ButtonOpts.Text("主菜单", g.FontFace[0].Face(25), LoadBlueButtonTextColor()),
 		widget.ButtonOpts.TextProcessBBCode(true),
 		// specify that the button's text needs some padding for correct display
 		widget.ButtonOpts.TextPadding(widget.Insets{
@@ -203,7 +203,7 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	//背景
 	switch gu.rep.BackgroundType {
 	case "image":
-		screen.DrawImage(gu.Background, DrawImageCentreOption(gu.Background))
+		screen.DrawImage(gu.Background, DrawBackgroundOption(gu.Background))
 	}
 	//人物
 	gu.ui.Draw(screen)
@@ -220,21 +220,35 @@ func (gu *GameUI) createWindow(g *Game) *widget.Window {
 			widget.WidgetOpts.MinSize(200, 100), // 设置最小宽度 100px
 		),
 	)
-	//gu.selectionwindow.Close()
-	windowContainer.AddChild(widget.NewText(
 
-		widget.TextOpts.Text(gu.rep.Select[0].Text, g.FontFace[0], color.NRGBA{254, 255, 255, 255}),
-		widget.TextOpts.WidgetOpts(widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-			HorizontalPosition: widget.AnchorLayoutPositionCenter,
-			VerticalPosition:   widget.AnchorLayoutPositionCenter,
-		})),
-	))
+	for _, v := range gu.rep.Select {
+		windowContainer.AddChild(widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			widget.ButtonOpts.Text(v.Text, g.FontFace[0].Face(25), LoadBlueButtonTextColor()),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   30,
+				Right:  30,
+				Top:    5,
+				Bottom: 5,
+			}),
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("Select选择了:", v.Text)
+				g.Player.Token += v.Token
+				gu.needchange = true
+				gu.nextid = v.Next
+				gu.selectionwindow.Close()
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		))
+	}
 
 	return widget.NewWindow(
 		// Set the main contents of the window
 		widget.WindowOpts.Contents(windowContainer),
 		// Set the window above everything else and block input elsewhere
-		widget.WindowOpts.Modal(),
+		//widget.WindowOpts.Modal(),
 	)
 }
 func (gu *GameUI) OpenWindows(g *Game) {

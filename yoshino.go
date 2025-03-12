@@ -7,7 +7,6 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 var (
@@ -16,10 +15,10 @@ var (
 
 type Game struct {
 	startTime time.Time
-	Status    GameStatus      //状态机
-	Player    Player          //存档
+	Status    GameStatus         //状态机
+	Player    Player             //存档
 	GameUI    [StatusTree + 1]UI //期望是与GameStatus对应的
-	FontFace  []text.Face
+	FontFace  []*FontSource
 }
 
 func (g *Game) Update() error {

@@ -7,6 +7,9 @@ import (
 //go:embed  MaokenZhuyuanTi.ttf
 var MaoKenTTF []byte
 
+//go:embed STLITI.TTF
+var StlitiTTF []byte
+
 //go:embed material
 var Material embed.FS
 

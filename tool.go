@@ -3,7 +3,6 @@ package yoshino
 import (
 	"bytes"
 	"image/color"
-	"log"
 	"unsafe"
 
 	"github.com/ebitenui/ebitenui/image"
@@ -12,17 +11,20 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
-func LoadFont(ttf []byte, size float64) (text.Face, error) {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(ttf))
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
-	}
+type FontSource text.GoTextFaceSource
 
+func LoadFont(ttf []byte) (f *FontSource, err error) {
+	gf := new(text.GoTextFaceSource)
+	gf, err = text.NewGoTextFaceSource(bytes.NewReader(ttf))
+	f = (*FontSource)(gf)
+	return
+}
+
+func (f *FontSource) Face(size float64) *text.GoTextFace {
 	return &text.GoTextFace{
-		Source: s,
+		Source: (*text.GoTextFaceSource)(f),
 		Size:   size,
-	}, nil
+	}
 }
 
 func (g *Game) Next(state GameStatus) {
@@ -31,6 +33,15 @@ func (g *Game) Next(state GameStatus) {
 	g.GameUI[g.Status].Init(g)
 }
 
+// 透明按钮
+func LoadRransparentButtonImage() *widget.ButtonImage {
+	transparentImage := image.NewNineSliceColor(color.RGBA{0, 0, 0, 0})
+	return &widget.ButtonImage{
+		Idle:    transparentImage,
+		Hover:   transparentImage,
+		Pressed: transparentImage,
+	}
+}
 func LoadButtonImage() *widget.ButtonImage {
 	idle := image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255})
 
@@ -45,15 +56,24 @@ func LoadButtonImage() *widget.ButtonImage {
 	}
 }
 
-func LoadButtonTextColor() *widget.ButtonTextColor {
+func LoadBlackButtonTextColor() *widget.ButtonTextColor {
 	return &widget.ButtonTextColor{
-		Idle:    color.NRGBA{0xdf, 0xf4, 0xff, 0xff}, //闲置
-		Hover:   color.NRGBA{0, 255, 128, 255},       //徘徊
-		Pressed: color.NRGBA{255, 0, 0, 255},         //按下
+		Idle:    color.Black,                //闲置
+		Hover:   color.RGBA{0, 0, 255, 255}, //徘徊
+		Pressed: color.RGBA{0, 255, 0, 255}, //按下
 	}
 }
 
-func DrawImageCentreOption(img *ebiten.Image) *ebiten.DrawImageOptions {
+func LoadBlueButtonTextColor() *widget.ButtonTextColor {
+	return &widget.ButtonTextColor{
+		Idle:    color.RGBA{135, 206, 250, 255}, //闲置
+		Hover:   color.RGBA{100, 149, 237, 255}, //徘徊
+		Pressed: color.RGBA{255, 215, 0, 255},   //按下
+	}
+}
+
+// 绘制背景
+func DrawBackgroundOption(img *ebiten.Image) *ebiten.DrawImageOptions {
 	op := &ebiten.DrawImageOptions{}
 	scaleFactor := max(float64(Width)/float64(img.Bounds().Dx()), float64(Height)/float64(img.Bounds().Dy()))
 	op.GeoM.Scale(scaleFactor, scaleFactor)
