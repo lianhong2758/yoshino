@@ -62,7 +62,8 @@ func (m *MenuUI) Init(g *Game) {
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("新的游戏")
-				g.Next(StatusGame)
+				//g.Next(StatusGame)
+				g.Transition(func() { g.Next(StatusGame) }, AnimationTransparent(g))
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
@@ -155,7 +156,7 @@ func (m *MenuUI) Init(g *Game) {
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("退出游戏")
-				os.Exit(0)
+				g.Transition(func() { os.Exit(0) }, AnimationTransparent(g))
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),

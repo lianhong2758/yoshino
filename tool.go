@@ -27,12 +27,6 @@ func (f *FontSource) Face(size float64) *text.GoTextFace {
 	}
 }
 
-func (g *Game) Next(state GameStatus) {
-	g.GameUI[g.Status].Clear(g)
-	g.Status = state
-	g.GameUI[g.Status].Init(g)
-}
-
 // 透明按钮
 func LoadRransparentButtonImage() *widget.ButtonImage {
 	transparentImage := image.NewNineSliceColor(color.RGBA{0, 0, 0, 0})

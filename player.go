@@ -12,7 +12,7 @@ import "encoding/json"
 
 type Player struct {
 	Token    int
-	ID       int
+	ID       string
 	CGUnlock string
 }
 
