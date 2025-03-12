@@ -1,0 +1,53 @@
+{
+    "1": {
+        "id": "1",
+        "types": "A",
+        "role": "丛雨",
+        "text": "早安早安早安!",
+        "avatar": "丛雨头像.jpg",
+        "creation": "",
+        "backgroundtype": "image",
+        "background": "background.webp",
+        "music": "",
+        "video": "",
+        "next": "2"
+    },
+    "2": {
+        "id": "2",
+        "types": "A",
+        "role": "丛雨",
+        "text": "Ciallo!",
+        "avatar": "丛雨头像.jpg",
+        "creation": "",
+        "backgroundtype": "image",
+        "background": "background.webp",
+        "music": "",
+        "video": "",
+        "next": "3"
+    },
+    "3": {
+        "id": "3",
+        "types": "C",
+        "role": "丛雨",
+        "text": "Ciallo!",
+        "avatar": "丛雨头像.jpg",
+        "creation": "",
+        "backgroundtype": "image",
+        "background": "background.webp",
+        "music": "",
+        "video": "",
+        "next": "4",
+        "select": [
+            {
+                "text": "选择1",
+                "next": "1",
+                "toekn": 10
+            },
+            {
+                "text": "选择2",
+                "next": "3",
+                "toekn": -10
+            }
+        ]
+    }
+}

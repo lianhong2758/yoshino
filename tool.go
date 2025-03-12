@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"image/color"
 	"log"
+	"unsafe"
 
 	"github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
@@ -78,4 +79,19 @@ func StreamString(b string) func() string {
 		current++ // 移动到下一个字符位置
 		return
 	}
+}
+
+// BytesToString 没有内存开销的转换
+func BytesToString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
+}
+
+// StringToBytes 没有内存开销的转换
+func StringToBytes(s string) (b []byte) {
+	return *(*[]byte)(unsafe.Pointer(
+		&struct {
+			string
+			Cap int
+		}{s, len(s)},
+	))
 }

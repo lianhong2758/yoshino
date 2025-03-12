@@ -20,7 +20,7 @@ type MenuUI struct {
 
 func (m *MenuUI) Init(g *Game) {
 	//	img, _, err := ebitenutil.NewImageFromFile("../data/menu.jpg")
-	img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.Menu))
+	img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial("menu.jpg")))
 	if err != nil {
 		log.Println(err)
 		return
@@ -191,8 +191,8 @@ func (m *MenuUI) Init(g *Game) {
 
 }
 func (m *MenuUI) Clear(g *Game) {
-	m.MenuFile= []*ebiten.Image{}
-	m.btns= []*widget.Button{}
+	m.MenuFile = []*ebiten.Image{}
+	m.btns = []*widget.Button{}
 	m.ui = nil
 }
 func (m *MenuUI) Update(g *Game) { m.ui.Update() }

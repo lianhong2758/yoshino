@@ -17,14 +17,14 @@ type TitleUI struct {
 
 func (t *TitleUI) Init(g *Game) {
 	//img, _, err := ebitenutil.NewImageFromFile("../data/title.png")
-	img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.Title))
+	img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial("title.png")))
 	if err != nil {
 		log.Println(err)
 		return
 	}
 	t.TitleFile = append(t.TitleFile, img)
 	//	img2, _, err := ebitenutil.NewImageFromFile("../data/logo.png")
-	img2, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.Logo))
+	img2, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial("logo.png")))
 	if err != nil {
 		log.Println(err)
 		return
