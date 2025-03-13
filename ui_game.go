@@ -20,6 +20,8 @@ import (
 	"github.com/lianhong2758/yoshino/file"
 )
 
+var FistID string = "1"
+
 type GameUI struct {
 	ui              *ebitenui.UI
 	Background      *ebiten.Image
@@ -46,7 +48,8 @@ type GameUI struct {
 
 func (gu *GameUI) Init(g *Game) {
 	ScriptInit()
-	gu.nextid = "1"
+	gu.nextid = FistID
+	FistID = "1" //重置,避免加载存档后利用firstid导致无法开启新游戏
 	gu.needchange = true
 	gu.Background = ebiten.NewImage(1, 1)
 
@@ -96,35 +99,145 @@ func (gu *GameUI) Init(g *Game) {
 		),
 	)
 	// 主菜单按钮
-	menubu := widget.NewButton(
-		widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-		// specify the button's text, the font face, and the color
-		//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-		widget.ButtonOpts.Text("主菜单", g.FontFace[0].Face(25), LoadBlueButtonTextColor()),
-		widget.ButtonOpts.TextProcessBBCode(true),
-		// specify that the button's text needs some padding for correct display
-		widget.ButtonOpts.TextPadding(widget.Insets{
-			Left:   30,
-			Right:  30,
-			Top:    5,
-			Bottom: 5,
-		}),
+	buttons := []*widget.Button{
+		widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			// specify the button's text, the font face, and the color
+			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+			widget.ButtonOpts.Text("读取", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextProcessBBCode(true),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
 
-		// add a handler that reacts to clicking the button
-		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-			log.Println("主菜单按钮被点击")
-			g.Next(StatusMenu)
-		}),
-		widget.ButtonOpts.DisableDefaultKeys(),
-	)
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("读取按钮被点击")
+				g.Next(StatusLoad)
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		),
+		widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			// specify the button's text, the font face, and the color
+			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+			widget.ButtonOpts.Text("保存", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextProcessBBCode(true),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
+
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("保存按钮被点击")
+				//g.Next(StatusSave)
+				FistID, g.Player.ID = gu.rep.ID, gu.rep.ID
+				g.Transition(func() { g.Next(StatusSave) }, ScreeCapture(g))
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		),
+		widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			// specify the button's text, the font face, and the color
+			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+			widget.ButtonOpts.Text("设置", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextProcessBBCode(true),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
+
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("设置按钮被点击")
+				g.Next(StatusSetting)
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		),
+		widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			// specify the button's text, the font face, and the color
+			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+			widget.ButtonOpts.Text("历史", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextProcessBBCode(true),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
+
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("历史按钮被点击")
+				//g.Next(StatusMenu)
+				//计划做个弹窗?
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		),
+		widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			// specify the button's text, the font face, and the color
+			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+			widget.ButtonOpts.Text("流程", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextProcessBBCode(true),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
+
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("流程按钮被点击")
+				g.Next(StatusTree)
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		),
+		widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			// specify the button's text, the font face, and the color
+			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+			widget.ButtonOpts.Text("主菜单", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextProcessBBCode(true),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
+
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("主菜单按钮被点击")
+				g.Next(StatusMenu)
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		),
+	}
 	// 创建网格布局容器（单行）
 	menu := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			widget.GridLayoutOpts.Columns(5),     // 单列布局
-			widget.GridLayoutOpts.Spacing(0, 10), // 按钮间距 5px
+			widget.GridLayoutOpts.Columns(6),    // 单列布局
+			widget.GridLayoutOpts.Spacing(0, 0), // 按钮间距 5px
 		)),
 		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.MinSize(200, 50), // 设置最小宽度 100px
+			widget.WidgetOpts.MinSize(300, 30), // 设置最小宽度 100px
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 				HorizontalPosition: widget.AnchorLayoutPositionEnd,
 				VerticalPosition:   widget.AnchorLayoutPositionEnd,
@@ -133,7 +246,9 @@ func (gu *GameUI) Init(g *Game) {
 			}),
 		),
 	)
-	menu.AddChild(menubu)
+	for _, v := range buttons {
+		menu.AddChild(v)
+	}
 	// 布局设置
 	rootContainer.AddChild(textbox)
 	rootContainer.AddChild(avatar)
@@ -147,11 +262,19 @@ func (gu *GameUI) Init(g *Game) {
 
 	gu.DrawString = func(s string) { label1.Label = s }
 	gu.DrawAvatar = func(s string) {
-		avatar.Image, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+		if s != "" {
+			avatar.Image, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+		} else {
+			avatar.Image = ebiten.NewImage(1, 1)
+		}
 	}
 	gu.DrawCreation = func(s string) {}
 	gu.DrawBackground = func(s string) {
-		gu.Background, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+		if s != "" {
+			gu.Background, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+		} else {
+			gu.Background = ebiten.NewImage(1, 1)
+		}
 	}
 	gu.PlayMusic = func(s string) {}
 	gu.PlayVideo = func(s string) {}
@@ -191,7 +314,11 @@ func (gu *GameUI) Update(g *Game) {
 		gu.DrawString(gu.newString())
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		gu.needchange = true
+		//避免调用按钮时误触
+		mx, my := ebiten.CursorPosition()
+		if mx > 0 && my < Height-30 {
+			gu.needchange = true
+		}
 	}
 	gu.ui.Update()
 }
@@ -224,11 +351,11 @@ func (gu *GameUI) createWindow(g *Game) *widget.Window {
 	for _, v := range gu.rep.Select {
 		windowContainer.AddChild(widget.NewButton(
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-			widget.ButtonOpts.Text(v.Text, g.FontFace[0].Face(25), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.Text(v.Text, g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
 			widget.ButtonOpts.TextPadding(widget.Insets{
-				Left:   30,
-				Right:  30,
+				Left:   20,
+				Right:  20,
 				Top:    5,
 				Bottom: 5,
 			}),

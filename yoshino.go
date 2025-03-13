@@ -7,6 +7,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/quasilyte/gdata"
 )
 
 var (
@@ -14,6 +15,7 @@ var (
 )
 
 type Game struct {
+	FileSystem *gdata.Manager
 	startTime  time.Time
 	Status     GameStatus         //状态机
 	Player     Player             //存档
@@ -34,7 +36,7 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	g.GameUI[g.Status].Draw(g, screen)
 	//过渡动画层
-	if g.transition.havetra{
+	if g.transition.havetra {
 		g.transition.draw(screen)
 	}
 	//fps文字图层
@@ -61,10 +63,10 @@ func (g *Game) Next(state GameStatus) {
 }
 
 // 插入过渡动画
-func (g *Game) Transition(f func(), draw func(screen *ebiten.Image)) {
+func (g *Game) Transition(def func(), draw func(screen *ebiten.Image)) {
 	g.transition = struct {
 		nextfunc func()
 		havetra  bool
 		draw     func(screen *ebiten.Image)
-	}{f, true, draw}
+	}{def, true, draw}
 }

@@ -36,6 +36,21 @@ func LoadRransparentButtonImage() *widget.ButtonImage {
 		Pressed: transparentImage,
 	}
 }
+
+func LoadNoDataButtonImage(g *Game) *widget.GraphicImage {
+	img := ebiten.NewImage(300, 200)
+	img.Fill(color.RGBA{255, 235, 205, 255})
+	op := &text.DrawOptions{}
+	op.GeoM.Translate((300-200)/2, (200-40)/2)
+	op.ColorScale.ScaleWithColor(color.RGBA{135, 206, 250, 255})
+	text.Draw(img, "No Data", g.FontFace[0].Face(40), op)
+	return &widget.GraphicImage{
+		Idle:    img,
+		Hover:   img,
+		Pressed: img,
+	}
+}
+
 func LoadButtonImage() *widget.ButtonImage {
 	idle := image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255})
 

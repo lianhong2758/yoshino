@@ -35,6 +35,8 @@ func (t *TitleUI) Init(g *Game) {
 	g.FontFace = append(g.FontFace, f)
 	f2, _ := LoadFont(file.StlitiTTF)
 	g.FontFace = append(g.FontFace, f2)
+	//初始化文件系统
+	g.LoadFileSystem()
 	//计算开屏时间需要
 	g.startTime = time.Now()
 }

@@ -1,6 +1,9 @@
 package yoshino
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"image"
+)
 
 // //用户存档信息
 // type Player interface {
@@ -11,9 +14,11 @@ import "encoding/json"
 // }
 
 type Player struct {
-	Token    int
-	ID       string
-	CGUnlock string
+	Token         int
+	ID            string
+	CGUnlock      string
+	ScreenData    []byte
+	screenContent image.Image
 }
 
 func (p *Player) Load(path string) {
