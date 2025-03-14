@@ -165,13 +165,130 @@ func (s *SaveUI) Draw(g *Game, screen *ebiten.Image) {
 }
 
 type LoadUI struct {
-	Players []Player
+	Players       []Player
+	ui            *ebitenui.UI
+	buttons       []*widget.Button
+	confirmwindow *widget.Window
 }
 
-func (*LoadUI) Init(g *Game)                       {}
-func (*LoadUI) Clear(g *Game)                      {}
-func (*LoadUI) Update(g *Game)                     {}
-func (*LoadUI) Draw(g *Game, screen *ebiten.Image) {}
+func (l *LoadUI) Init(g *Game) {
+	//ui
+	clear(l.Players)
+	l.buttons = []*widget.Button{}
+	l.Players, _ = g.LoadPlayers()
+	rootContainer := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+	)
+
+	for k, v := range l.Players {
+		if v.ID != "" {
+			//非空按钮
+			l.buttons = append(l.buttons, widget.NewButton(
+				widget.ButtonOpts.Graphic(LoadButtonImageByImage(g, v)),
+				widget.ButtonOpts.GraphicPadding(widget.Insets{Left: 10, Top: 10}),
+				widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+				// add a handler that reacts to clicking the button
+				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+					log.Println("点击存档", k)
+					l.OpenWindows(g, func() { FistID = l.Players[k].ID; g.Transition(func() { g.Next(StatusGame) }, AnimationTransparent(g)) }, "确定加载此存档?")
+				}),
+				widget.ButtonOpts.DisableDefaultKeys(),
+			))
+		} else {
+			l.buttons = append(l.buttons, widget.NewButton(
+				widget.ButtonOpts.Graphic(LoadNoDataButtonImage(g)),
+				widget.ButtonOpts.GraphicPadding(widget.Insets{Left: 10, Top: 10}),
+				widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+				// add a handler that reacts to clicking the button
+				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+					log.Println("点击空存档", k)
+					l.OpenWindows(g, func() {}, "此存档为空! ")
+				}),
+				widget.ButtonOpts.DisableDefaultKeys(),
+			))
+		}
+
+	}
+	/*
+	   x x x x
+	   x x x x
+	   x x x x
+	*/
+	// 创建网格布局容器 4*3
+	btcont := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewGridLayout(
+			widget.GridLayoutOpts.Columns(4),      // 单列布局
+			widget.GridLayoutOpts.Spacing(20, 30), // 按钮间距 5px
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(Width-200, Height-400), // 设置最小宽度
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+				StretchHorizontal:  false,
+				StretchVertical:    false,
+			}),
+		),
+	)
+	for _, v := range l.buttons {
+		btcont.AddChild(v)
+	}
+	// 创建网格布局容器（单行）
+	menu := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewGridLayout(
+			widget.GridLayoutOpts.Columns(3),    // 单列布局
+			widget.GridLayoutOpts.Spacing(0, 0), // 按钮间距 5px
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(40, 30), // 设置最小宽度 100px
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionEnd,
+				VerticalPosition:   widget.AnchorLayoutPositionEnd,
+				StretchHorizontal:  false,
+				StretchVertical:    false,
+			}),
+		),
+	)
+
+	menu.AddChild(widget.NewButton(
+		widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+		// specify the button's text, the font face, and the color
+		//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("返回", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+		widget.ButtonOpts.TextProcessBBCode(true),
+		// specify that the button's text needs some padding for correct display
+		widget.ButtonOpts.TextPadding(widget.Insets{
+			Left:   20,
+			Right:  20,
+			Top:    5,
+			Bottom: 5,
+		}),
+
+		// add a handler that reacts to clicking the button
+		widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+			log.Println("返回按钮被点击")
+			//g.Next(StatusSave)
+			g.Next(g.lastState)
+		}),
+		widget.ButtonOpts.DisableDefaultKeys(),
+	))
+
+	rootContainer.AddChild(btcont)
+	rootContainer.AddChild(menu)
+	l.ui = &ebitenui.UI{
+		Container: rootContainer,
+	}
+}
+func (l *LoadUI) Clear(g *Game) {
+	l.confirmwindow = nil
+}
+func (l *LoadUI) Update(g *Game) {
+	l.ui.Update()
+}
+func (l *LoadUI) Draw(g *Game, screen *ebiten.Image) {
+	screen.Fill(color.RGBA{255, 250, 250, 255})
+	l.ui.Draw(screen)
+}
 
 func (g *Game) LoadPlayers() ([]Player, error) {
 	if !g.FileSystem.ItemExists("players.gob") {
@@ -228,7 +345,7 @@ func (g *Game) LoadFileSystem() {
 	g.FileSystem = m
 }
 
-func createWindow(g *Game, actionf func(), closef *func()) *widget.Window {
+func createWindow(g *Game, text string, actionf func(), closef *func()) *widget.Window {
 	rootContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 		widget.ContainerOpts.BackgroundImage(eimage.NewNineSliceColor(color.RGBA{255, 218, 185, 255})),
@@ -278,7 +395,7 @@ func createWindow(g *Game, actionf func(), closef *func()) *widget.Window {
 	}
 	rootContainer.AddChild(widget.NewText(
 		widget.TextOpts.Insets(widget.Insets{Bottom: 100}),
-		widget.TextOpts.Text("确定要保存在这里吗?", g.FontFace[0].Face(40), color.RGBA{135, 206, 250, 255}),
+		widget.TextOpts.Text(text, g.FontFace[0].Face(40), color.RGBA{135, 206, 250, 255}),
 		widget.TextOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 				HorizontalPosition: widget.AnchorLayoutPositionCenter,
@@ -296,7 +413,30 @@ func createWindow(g *Game, actionf func(), closef *func()) *widget.Window {
 func (s *SaveUI) OpenWindows(g *Game, actionf func()) {
 	var closef *func() = new(func())
 	if s.confirmwindow == nil {
-		s.confirmwindow = createWindow(g, actionf, closef) // s.confirmwindow.Close)
+		s.confirmwindow = createWindow(g, "确定要保存在这里吗?", actionf, closef) // s.confirmwindow.Close)
+	}
+	(*closef) = s.confirmwindow.Close
+	if !s.ui.IsWindowOpen(s.confirmwindow) {
+		log.Println("打开确认窗口")
+		// Get the preferred size of the content
+		x, y := s.confirmwindow.Contents.PreferredSize()
+
+		// Create a rect with the preferred size of the content
+		r := image.Rect(0, 0, x, y)
+		// Use the Add method to move the window to the specified point
+		//左上角点
+		r = r.Add(image.Pt((Width-x)/2, (Height-y)/2))
+		// Set the windows location to the rect.
+		s.confirmwindow.SetLocation(r)
+		// Add the window to the UI.
+		// Note: If the window is already added, this will just move the window and not add a duplicate.
+		s.ui.AddWindow(s.confirmwindow)
+	}
+}
+func (s *LoadUI) OpenWindows(g *Game, actionf func(), text string) {
+	var closef *func() = new(func())
+	if s.confirmwindow == nil {
+		s.confirmwindow = createWindow(g, text, actionf, closef) // s.confirmwindow.Close)
 	}
 	(*closef) = s.confirmwindow.Close
 	if !s.ui.IsWindowOpen(s.confirmwindow) {

@@ -21,6 +21,7 @@ type Game struct {
 	Player     Player             //存档
 	GameUI     [StatusTree + 1]UI //期望是与GameStatus对应的
 	FontFace   []*FontSource
+	lastState  GameStatus
 	transition struct {
 		nextfunc func()
 		havetra  bool
@@ -57,6 +58,7 @@ func NewGame() *Game {
 }
 
 func (g *Game) Next(state GameStatus) {
+	g.lastState = g.Status
 	g.GameUI[g.Status].Clear(g)
 	g.Status = state
 	g.GameUI[g.Status].Init(g)
