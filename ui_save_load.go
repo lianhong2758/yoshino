@@ -190,7 +190,15 @@ func (l *LoadUI) Init(g *Game) {
 				// add a handler that reacts to clicking the button
 				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 					log.Println("点击存档", k)
-					l.OpenWindows(g, func() { FistID = l.Players[k].ID; g.Transition(func() { g.Next(StatusGame) }, AnimationTransparent(g)) }, "确定加载此存档?")
+					l.OpenWindows(g, func() {
+						FistID = l.Players[k].ID
+						g.Player = l.Players[k]
+						g.Transition(func() {
+							g.Next(StatusGame)
+						},
+							AnimationTransparent(g),
+						)
+					}, "确定加载此存档?")
 				}),
 				widget.ButtonOpts.DisableDefaultKeys(),
 			))
@@ -415,7 +423,7 @@ func (s *SaveUI) OpenWindows(g *Game, actionf func()) {
 	if s.confirmwindow == nil {
 		s.confirmwindow = createWindow(g, "确定要保存在这里吗?", actionf, closef) // s.confirmwindow.Close)
 	}
-	(*closef) = s.confirmwindow.Close
+	(*closef) = func() { s.confirmwindow.Close(); s.confirmwindow = nil }
 	if !s.ui.IsWindowOpen(s.confirmwindow) {
 		log.Println("打开确认窗口")
 		// Get the preferred size of the content
@@ -433,16 +441,16 @@ func (s *SaveUI) OpenWindows(g *Game, actionf func()) {
 		s.ui.AddWindow(s.confirmwindow)
 	}
 }
-func (s *LoadUI) OpenWindows(g *Game, actionf func(), text string) {
+func (l *LoadUI) OpenWindows(g *Game, actionf func(), text string) {
 	var closef *func() = new(func())
-	if s.confirmwindow == nil {
-		s.confirmwindow = createWindow(g, text, actionf, closef) // s.confirmwindow.Close)
+	if l.confirmwindow == nil {
+		l.confirmwindow = createWindow(g, text, actionf, closef) // s.confirmwindow.Close)
 	}
-	(*closef) = s.confirmwindow.Close
-	if !s.ui.IsWindowOpen(s.confirmwindow) {
+	(*closef) = func() { l.confirmwindow.Close(); l.confirmwindow = nil }
+	if !l.ui.IsWindowOpen(l.confirmwindow) {
 		log.Println("打开确认窗口")
 		// Get the preferred size of the content
-		x, y := s.confirmwindow.Contents.PreferredSize()
+		x, y := l.confirmwindow.Contents.PreferredSize()
 
 		// Create a rect with the preferred size of the content
 		r := image.Rect(0, 0, x, y)
@@ -450,9 +458,9 @@ func (s *LoadUI) OpenWindows(g *Game, actionf func(), text string) {
 		//左上角点
 		r = r.Add(image.Pt((Width-x)/2, (Height-y)/2))
 		// Set the windows location to the rect.
-		s.confirmwindow.SetLocation(r)
+		l.confirmwindow.SetLocation(r)
 		// Add the window to the UI.
 		// Note: If the window is already added, this will just move the window and not add a duplicate.
-		s.ui.AddWindow(s.confirmwindow)
+		l.ui.AddWindow(l.confirmwindow)
 	}
 }
