@@ -1,7 +1,9 @@
 package yoshino
 
 import (
+	"bytes"
 	"image/color"
+	"image/png"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -25,10 +27,12 @@ func AnimationTransparent(g *Game) func(screen *ebiten.Image) {
 	}
 }
 
-// 截屏并保存至g.screencontent
+// 截屏并保存至g.Player.ScreenData
 func ScreeCapture(g *Game) func(screen *ebiten.Image) {
 	return func(screen *ebiten.Image) {
-		g.Player.screenContent = screen.SubImage(screen.Bounds())
+		var picbuff bytes.Buffer
+		_ = png.Encode(&picbuff, screen.SubImage(screen.Bounds()))
+		g.Player.ScreenData = picbuff.Bytes()
 		g.transition.havetra = false
 		g.transition.nextfunc()
 	}

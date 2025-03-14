@@ -37,6 +37,7 @@ func LoadRransparentButtonImage() *widget.ButtonImage {
 	}
 }
 
+// left 50
 func LoadNoDataButtonImage(g *Game) *widget.GraphicImage {
 	img := ebiten.NewImage(300, 200)
 	img.Fill(color.RGBA{255, 235, 205, 255})
@@ -51,12 +52,36 @@ func LoadNoDataButtonImage(g *Game) *widget.GraphicImage {
 	}
 }
 
-func LoadButtonImage() *widget.ButtonImage {
-	idle := image.NewNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255})
+func LoadButtonImageByImage(g *Game, p Player) *widget.GraphicImage {
+	img := ebiten.NewImage(300, 200)
+	img.Fill(color.RGBA{255, 235, 205, 255})
+	// op := &text.DrawOptions{}
+	// op.GeoM.Translate((300-200)/2, (200-40)/2)
+	// op.ColorScale.ScaleWithColor(color.RGBA{135, 206, 250, 255})
+	// text.Draw(img, "No Data", g.FontFace[0].Face(40), op)
+	//260宽
+	var op = &ebiten.DrawImageOptions{}
+	scaleFactor := 260 / float64(p.screenEbitenImage.Bounds().Dx())
+	op.GeoM.Scale(scaleFactor, scaleFactor)
+	op.GeoM.Translate(
+		(300-(float64(p.screenEbitenImage.Bounds().Dx())*scaleFactor))/2,
+		(300-(float64(p.screenEbitenImage.Bounds().Dx())*scaleFactor))/2,
+	)
+	img.DrawImage(p.screenEbitenImage, op)
+	return &widget.GraphicImage{
+		Idle:    img,
+		Hover:   img,
+		Pressed: img,
+	}
+}
 
-	hover := image.NewNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255})
+// 选择窗口的按钮背景,米黄色?
+func LoadConfirmButtonImage() *widget.ButtonImage {
+	idle := image.NewNineSliceColor(color.NRGBA{255, 165, 0, 255})
 
-	pressed := image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 120, A: 255})
+	hover := image.NewNineSliceColor(color.NRGBA{255, 140, 0, 255})
+
+	pressed := image.NewNineSliceColor(color.NRGBA{255, 127, 80, 255})
 
 	return &widget.ButtonImage{
 		Idle:    idle,

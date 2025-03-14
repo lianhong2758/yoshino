@@ -3,11 +3,12 @@ package yoshino
 import (
 	"bytes"
 	"encoding/gob"
+	"image"
 	"image/color"
-	"image/png"
 	"log"
 
 	"github.com/ebitenui/ebitenui"
+	eimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -15,9 +16,10 @@ import (
 )
 
 type SaveUI struct {
-	Players []Player
-	ui      *ebitenui.UI
-	buttons []*widget.Button
+	Players       []Player
+	ui            *ebitenui.UI
+	buttons       []*widget.Button
+	confirmwindow *widget.Window
 }
 
 func (s *SaveUI) Init(g *Game) {
@@ -25,57 +27,61 @@ func (s *SaveUI) Init(g *Game) {
 	//ui
 	clear(s.Players)
 	s.buttons = []*widget.Button{}
-	g.LoadPlayers()
+	s.Players, _ = g.LoadPlayers()
 	rootContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
-	// nilbutton := widget.NewButton(
-	// 	widget.ButtonOpts.Graphic(LoadNoDataButtonImage(g)),
-	// 	widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-	// 	// specify the button's text, the font face, and the color
-	// 	//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-	// 	widget.ButtonOpts.Text("", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
-	// 	widget.ButtonOpts.TextProcessBBCode(true),
-	// 	// specify that the button's text needs some padding for correct display
-	// 	widget.ButtonOpts.TextPadding(widget.Insets{
-	// 		Left:   20,
-	// 		Right:  20,
-	// 		Top:    5,
-	// 		Bottom: 5,
-	// 	}),
-	// 	// add a handler that reacts to clicking the button
-	// 	widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-	// 		log.Println(" 按钮被点击")
 
-	// 	}),
-	// 	widget.ButtonOpts.DisableDefaultKeys(),
-	// )
+	for k, v := range s.Players {
+		if v.ID != "" {
+			//非空按钮
+			s.buttons = append(s.buttons, widget.NewButton(
+				widget.ButtonOpts.Graphic(LoadButtonImageByImage(g, v)),
+				widget.ButtonOpts.GraphicPadding(widget.Insets{Left: 10, Top: 10}),
+				widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+				// specify the button's text, the font face, and the color
+				//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+				//widget.ButtonOpts.Text("", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+				//widget.ButtonOpts.TextProcessBBCode(true),
+				// specify that the button's text needs some padding for correct display
+				// widget.ButtonOpts.TextPadding(widget.Insets{
+				// 	Left:   20,
+				// 	Right:  20,
+				// 	Top:    5,
+				// 	Bottom: 5,
+				// }),
+				// add a handler that reacts to clicking the button
+				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+					log.Println("覆盖保存", k)
+					s.OpenWindows(g, func() { s.Players[k] = g.Player; g.SavePlayers(s.Players); g.Next(StatusSave) })
+				}),
+				widget.ButtonOpts.DisableDefaultKeys(),
+			))
+		} else {
+			s.buttons = append(s.buttons, widget.NewButton(
+				widget.ButtonOpts.Graphic(LoadNoDataButtonImage(g)),
+				widget.ButtonOpts.GraphicPadding(widget.Insets{Left: 10, Top: 10}),
+				widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+				// specify the button's text, the font face, and the color
+				//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+				//widget.ButtonOpts.Text("", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+				//widget.ButtonOpts.TextProcessBBCode(true),
+				// specify that the button's text needs some padding for correct display
+				// widget.ButtonOpts.TextPadding(widget.Insets{
+				// 	Left:   20,
+				// 	Right:  20,
+				// 	Top:    5,
+				// 	Bottom: 5,
+				// }),
+				// add a handler that reacts to clicking the button
+				widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+					log.Println("保存", k)
+					s.OpenWindows(g, func() { s.Players[k] = g.Player; g.SavePlayers(s.Players); g.Next(StatusSave) })
+				}),
+				widget.ButtonOpts.DisableDefaultKeys(),
+			))
+		}
 
-	for range s.Players {
-		//...
-	}
-	for range 12 - len(s.Players) {
-		s.buttons = append(s.buttons, widget.NewButton(
-			widget.ButtonOpts.Graphic(LoadNoDataButtonImage(g)),
-			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-			// specify the button's text, the font face, and the color
-			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			//widget.ButtonOpts.Text("", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
-			//widget.ButtonOpts.TextProcessBBCode(true),
-			// specify that the button's text needs some padding for correct display
-			// widget.ButtonOpts.TextPadding(widget.Insets{
-			// 	Left:   20,
-			// 	Right:  20,
-			// 	Top:    5,
-			// 	Bottom: 5,
-			// }),
-			// add a handler that reacts to clicking the button
-			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-				log.Println(" 按钮被点击")
-
-			}),
-			widget.ButtonOpts.DisableDefaultKeys(),
-		))
 	}
 	/*
 	   x x x x
@@ -147,7 +153,9 @@ func (s *SaveUI) Init(g *Game) {
 		Container: rootContainer,
 	}
 }
-func (s *SaveUI) Clear(g *Game) {}
+func (s *SaveUI) Clear(g *Game) {
+	s.confirmwindow = nil
+}
 func (s *SaveUI) Update(g *Game) {
 	s.ui.Update()
 }
@@ -167,7 +175,7 @@ func (*LoadUI) Draw(g *Game, screen *ebiten.Image) {}
 
 func (g *Game) LoadPlayers() ([]Player, error) {
 	if !g.FileSystem.ItemExists("players.gob") {
-		return []Player{}, nil
+		return make([]Player, 12), nil
 	}
 	data, err := g.FileSystem.LoadItem("players.gob")
 	if err != nil {
@@ -181,16 +189,19 @@ func (g *Game) LoadPlayers() ([]Player, error) {
 		return nil, err
 	}
 	for k := range len(players) {
-		players[k].screenContent, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(players[k].ScreenData))
+		// players[k].screenContent
+		players[k].screenEbitenImage, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(players[k].ScreenData))
+	}
+	//如果不够12就补齐
+	for range 12 - len(players) {
+		players = append(players, Player{})
 	}
 	return players, nil
 }
 
 func (g *Game) SavePlayers(p []Player) error {
-	for k := range len(p) {
-		var picbuff bytes.Buffer
-		_ = png.Encode(&picbuff, g.Player.screenContent)
-		p[k].ScreenData = picbuff.Bytes()
+	for range 12 - len(p) {
+		p = append(p, Player{})
 	}
 	var buff bytes.Buffer
 	enc := gob.NewEncoder(&buff)
@@ -215,4 +226,93 @@ func (g *Game) LoadFileSystem() {
 		panic(err)
 	}
 	g.FileSystem = m
+}
+
+func createWindow(g *Game, actionf func(), closef *func()) *widget.Window {
+	rootContainer := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
+		widget.ContainerOpts.BackgroundImage(eimage.NewNineSliceColor(color.RGBA{255, 218, 185, 255})),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(600, 350), // 设置最小宽度 100px
+		),
+	)
+	// Create the contents of the window
+	windowContainer := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewGridLayout(
+			widget.GridLayoutOpts.Columns(2),       //  并列
+			widget.GridLayoutOpts.Spacing(100, 10), // 按钮间距 5px
+			widget.GridLayoutOpts.Padding(widget.Insets{Top: 120}),
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.MinSize(200, 100), // 设置最小宽度 100px
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			}),
+		),
+	)
+
+	for _, v := range []string{"确认", "取消"} {
+		ok := v
+		windowContainer.AddChild(widget.NewButton(
+			widget.ButtonOpts.Image(LoadConfirmButtonImage()),
+			widget.ButtonOpts.Text(v, g.FontFace[0].Face(40), LoadBlueButtonTextColor()),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("用户保存选择了:", v)
+				if ok == "确认" {
+					//执行操作
+					actionf()
+				}
+				(*closef)()
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		))
+	}
+	rootContainer.AddChild(widget.NewText(
+		widget.TextOpts.Insets(widget.Insets{Bottom: 100}),
+		widget.TextOpts.Text("确定要保存在这里吗?", g.FontFace[0].Face(40), color.RGBA{135, 206, 250, 255}),
+		widget.TextOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			})),
+	))
+	rootContainer.AddChild(windowContainer)
+	return widget.NewWindow(
+		// Set the main contents of the window
+		widget.WindowOpts.Contents(rootContainer),
+		// Set the window above everything else and block input elsewhere
+		widget.WindowOpts.Modal(),
+	)
+}
+func (s *SaveUI) OpenWindows(g *Game, actionf func()) {
+	var closef *func() = new(func())
+	if s.confirmwindow == nil {
+		s.confirmwindow = createWindow(g, actionf, closef) // s.confirmwindow.Close)
+	}
+	(*closef) = s.confirmwindow.Close
+	if !s.ui.IsWindowOpen(s.confirmwindow) {
+		log.Println("打开确认窗口")
+		// Get the preferred size of the content
+		x, y := s.confirmwindow.Contents.PreferredSize()
+
+		// Create a rect with the preferred size of the content
+		r := image.Rect(0, 0, x, y)
+		// Use the Add method to move the window to the specified point
+		//左上角点
+		r = r.Add(image.Pt((Width-x)/2, (Height-y)/2))
+		// Set the windows location to the rect.
+		s.confirmwindow.SetLocation(r)
+		// Add the window to the UI.
+		// Note: If the window is already added, this will just move the window and not add a duplicate.
+		s.ui.AddWindow(s.confirmwindow)
+	}
 }

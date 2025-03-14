@@ -279,7 +279,9 @@ func (gu *GameUI) Init(g *Game) {
 	gu.PlayMusic = func(s string) {}
 	gu.PlayVideo = func(s string) {}
 }
-func (*GameUI) Clear(g *Game) {}
+func (gu *GameUI) Clear(g *Game) {
+	gu.selectionwindow = nil
+}
 func (gu *GameUI) Update(g *Game) {
 	if gu.needchange {
 		//change
