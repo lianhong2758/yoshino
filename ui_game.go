@@ -2,6 +2,7 @@ package yoshino
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"log"
@@ -12,6 +13,7 @@ import (
 	_ "golang.org/x/image/webp"
 
 	"github.com/ebitenui/ebitenui"
+	eimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
@@ -26,6 +28,7 @@ type GameUI struct {
 	ui              *ebitenui.UI
 	Background      *ebiten.Image
 	selectionwindow *widget.Window
+	historywindow   *widget.Window
 	//Character  *ebiten.Image
 	//Words      string       //完整的台词
 	newString  func() string
@@ -33,6 +36,7 @@ type GameUI struct {
 	needchange bool
 	nextid     string      //下一个id
 	rep        *Repertoire //当前剧本
+	history    []string    //存放id?还可以扩展语音播放等
 
 	DrawString     func(string) //修改正在显示的文字
 	DrawAvatar     func(string) //修改头像
@@ -184,6 +188,7 @@ func (gu *GameUI) Init(g *Game) {
 				log.Println("历史按钮被点击")
 				//g.Next(StatusMenu)
 				//计划做个弹窗?
+				gu.OpenHistory(g)
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
@@ -281,11 +286,13 @@ func (gu *GameUI) Init(g *Game) {
 }
 func (gu *GameUI) Clear(g *Game) {
 	gu.selectionwindow = nil
+	gu.history = []string{}
 }
 func (gu *GameUI) Update(g *Game) {
 	if gu.needchange {
 		//change
-		gu.rep = LoadNextRepertoire(gu.nextid)
+		gu.rep = LoadRepertoire(gu.nextid)
+		gu.history = append(gu.history, gu.rep.ID)
 		switch gu.rep.Types {
 		case "A": //常规类型
 			gu.newString = StreamString(gu.rep.Role + ": " + gu.rep.Text)
@@ -299,7 +306,8 @@ func (gu *GameUI) Update(g *Game) {
 		case "B": //CG
 		case "C":
 			//选择界面
-			gu.OpenWindows(g)
+			gu.needchange = false
+			gu.OpenSelectWindows(g)
 		case "D": //个人线判断
 			id := gu.rep.Map[strconv.Itoa(g.Player.Token)]
 			if id == "" {
@@ -318,7 +326,7 @@ func (gu *GameUI) Update(g *Game) {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		//避免调用按钮时误触
 		mx, my := ebiten.CursorPosition()
-		if mx > 0 && my < Height-30 {
+		if mx > 0 && my < Height-30 && gu.historywindow == nil {
 			gu.needchange = true
 		}
 	}
@@ -338,7 +346,7 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	gu.ui.Draw(screen)
 }
 
-func (gu *GameUI) createWindow(g *Game) *widget.Window {
+func (gu *GameUI) createSelectWindow(g *Game) *widget.Window {
 	// Create the contents of the window
 	windowContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
@@ -380,9 +388,9 @@ func (gu *GameUI) createWindow(g *Game) *widget.Window {
 		//widget.WindowOpts.Modal(),
 	)
 }
-func (gu *GameUI) OpenWindows(g *Game) {
+func (gu *GameUI) OpenSelectWindows(g *Game) {
 	if gu.selectionwindow == nil {
-		gu.selectionwindow = gu.createWindow(g)
+		gu.selectionwindow = gu.createSelectWindow(g)
 	}
 	if !gu.ui.IsWindowOpen(gu.selectionwindow) {
 		log.Println("打开选择窗口")
@@ -400,4 +408,112 @@ func (gu *GameUI) OpenWindows(g *Game) {
 		// Note: If the window is already added, this will just move the window and not add a duplicate.
 		gu.ui.AddWindow(gu.selectionwindow)
 	}
+}
+
+func (gu *GameUI) OpenHistory(g *Game) {
+	if gu.historywindow == nil {
+		gu.historywindow = gu.createHistoryWindow(g)
+	}
+	if !gu.ui.IsWindowOpen(gu.historywindow) {
+		log.Println("打开选择窗口")
+		// Get the preferred size of the content
+		x, y := gu.historywindow.Contents.PreferredSize()
+
+		// Create a rect with the preferred size of the content
+		r := image.Rect(0, 0, x, y)
+		// Use the Add method to move the window to the specified point
+		//左上角点
+		r = r.Add(image.Pt((Width-x)/2, (Height-y)/2))
+		// Set the windows location to the rect.
+		gu.historywindow.SetLocation(r)
+		// Add the window to the UI.
+		// Note: If the window is already added, this will just move the window and not add a duplicate.
+		gu.ui.AddWindow(gu.historywindow)
+	} else {
+		gu.historywindow.Close()
+		gu.historywindow = nil
+	}
+}
+func (gu *GameUI) createHistoryWindow(g *Game) *widget.Window {
+	// construct a new container that serves as the root of the UI hierarchy
+	rootContainer := widget.NewContainer(
+		// the container will use a plain color as its background
+		widget.ContainerOpts.BackgroundImage(eimage.NewNineSliceColor(color.NRGBA{0, 0, 0, 0})),
+
+		// the container will use an anchor layout to layout its single child widget
+		widget.ContainerOpts.Layout(widget.NewRowLayout(
+			widget.RowLayoutOpts.Padding(widget.NewInsetsSimple(30)),
+			widget.RowLayoutOpts.Direction(widget.DirectionVertical),
+		)),
+	)
+
+	// construct a textarea
+	textarea := widget.NewTextArea(
+		widget.TextAreaOpts.ContainerOpts(
+			widget.ContainerOpts.WidgetOpts(
+				//Set the layout data for the textarea
+				//including a max height to ensure the scroll bar is visible
+				widget.WidgetOpts.LayoutData(widget.RowLayoutData{
+					Position:  widget.RowLayoutPositionCenter,
+					MaxWidth:  Width - 200,
+					MaxHeight: Height - 200,
+				}),
+				//Set the minimum size for the widget
+				widget.WidgetOpts.MinSize(Width-200, Height-200),
+			),
+		),
+		//Set gap between scrollbar and text
+		widget.TextAreaOpts.ControlWidgetSpacing(2),
+		//Tell the textarea to display bbcodes
+		widget.TextAreaOpts.ProcessBBCode(true),
+		//Set the font color
+		widget.TextAreaOpts.FontColor(color.Black),
+		//Set the font face (size) to use
+		widget.TextAreaOpts.FontFace(g.FontFace[0].Face(40)),
+		//Set the initial text for the textarea
+		//It will automatically line wrap and process newlines characters
+		//If ProcessBBCode is true it will parse out bbcode
+		widget.TextAreaOpts.Text(""),
+		//Tell the TextArea to show the vertical scrollbar
+		//widget.TextAreaOpts.ShowVerticalScrollbar(),
+		//Set padding between edge of the widget and where the text is drawn
+		widget.TextAreaOpts.TextPadding(widget.NewInsetsSimple(20)),
+		//This sets the background images for the scroll container
+		widget.TextAreaOpts.ScrollContainerOpts(
+			widget.ScrollContainerOpts.Image(&widget.ScrollContainerImage{
+				Idle: eimage.NewNineSliceColor(color.NRGBA{255, 255, 255, 200}),
+				Mask: eimage.NewNineSliceColor(color.NRGBA{255, 255, 255, 200}),
+			}),
+		),
+		//This sets the images to use for the sliders
+		widget.TextAreaOpts.SliderOpts(
+			widget.SliderOpts.Images(
+				// Set the track images
+				&widget.SliderTrackImage{
+					Idle:  eimage.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
+					Hover: eimage.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
+				},
+				// Set the handle images
+				&widget.ButtonImage{
+					Idle:    eimage.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
+					Hover:   eimage.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
+					Pressed: eimage.NewNineSliceColor(color.NRGBA{255, 100, 100, 255}),
+				},
+			),
+		),
+	)
+	//Add text to the end of the textarea
+	for _, v := range gu.history {
+		t := LoadRepertoire(v)
+		textarea.AppendText(fmt.Sprint("\n", t.Role, ": ", t.Text))
+	}
+	rootContainer.AddChild(textarea)
+
+	return widget.NewWindow(
+
+		// Set the main contents of the window
+		widget.WindowOpts.Contents(rootContainer),
+		// Set the window above everything else and block input elsewhere
+		//widget.WindowOpts.Modal(),
+	)
 }

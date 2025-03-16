@@ -47,7 +47,6 @@ func ScriptInit() {
 	}
 }
 
-func LoadNextRepertoire(id string) *Repertoire {
-	t := script[id]
-	return t
+func LoadRepertoire(id string) *Repertoire {
+	return script[id]
 }
