@@ -475,7 +475,7 @@ func (gu *GameUI) createHistoryWindow(g *Game) *widget.Window {
 		//If ProcessBBCode is true it will parse out bbcode
 		widget.TextAreaOpts.Text(""),
 		//Tell the TextArea to show the vertical scrollbar
-		//widget.TextAreaOpts.ShowVerticalScrollbar(),
+		widget.TextAreaOpts.ShowVerticalScrollbar(),
 		//Set padding between edge of the widget and where the text is drawn
 		widget.TextAreaOpts.TextPadding(widget.NewInsetsSimple(20)),
 		//This sets the background images for the scroll container
@@ -490,8 +490,8 @@ func (gu *GameUI) createHistoryWindow(g *Game) *widget.Window {
 			widget.SliderOpts.Images(
 				// Set the track images
 				&widget.SliderTrackImage{
-					Idle:  eimage.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
-					Hover: eimage.NewNineSliceColor(color.NRGBA{200, 200, 200, 255}),
+					Idle:  eimage.NewNineSliceColor(color.NRGBA{255, 255, 255, 100}),
+					Hover: eimage.NewNineSliceColor(color.NRGBA{225, 255, 255, 100}),
 				},
 				// Set the handle images
 				&widget.ButtonImage{
@@ -505,7 +505,9 @@ func (gu *GameUI) createHistoryWindow(g *Game) *widget.Window {
 	//Add text to the end of the textarea
 	for _, v := range gu.history {
 		t := LoadRepertoire(v)
-		textarea.AppendText(fmt.Sprint("\n", t.Role, ": ", t.Text))
+		if t.Types == "A" {
+			textarea.AppendText(fmt.Sprint("\n", t.Role, ": ", t.Text, "\n"))
+		}
 	}
 	rootContainer.AddChild(textarea)
 
