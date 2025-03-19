@@ -27,6 +27,7 @@ type Game struct {
 		havetra  bool
 		draw     func(screen *ebiten.Image)
 	}
+	Config *Config
 }
 
 func (g *Game) Update() error {
@@ -53,6 +54,8 @@ func NewGame() *Game {
 	g := Game{Status: 0, GameUI: [StatusTree + 1]UI{
 		&TitleUI{}, &MenuUI{}, &GameUI{}, &CGUI{}, &SettingUI{}, &SaveUI{}, &LoadUI{}, &TreeUI{}},
 	}
+	//初始化文件系统
+	g.LoadFileSystem()
 	g.Next(StatusTitle)
 	return &g
 }

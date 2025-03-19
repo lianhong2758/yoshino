@@ -395,8 +395,9 @@ func createWindow(g *Game, text string, actionf func(), closef *func()) *widget.
 				if ok == "确认" {
 					//执行操作
 					actionf()
+				}else{
+					(*closef)()
 				}
-				(*closef)()
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		))
@@ -421,7 +422,7 @@ func createWindow(g *Game, text string, actionf func(), closef *func()) *widget.
 func (s *SaveUI) OpenWindows(g *Game, actionf func()) {
 	var closef *func() = new(func())
 	if s.confirmwindow == nil {
-		s.confirmwindow = createWindow(g, "确定要保存在这里吗?", actionf, closef) // s.confirmwindow.Close)
+		s.confirmwindow = createWindow(g, "确定要保存在这里吗?", actionf, closef) //Colse 如果确认跳转会导致空指针,所以作为else选项
 	}
 	(*closef) = func() { s.confirmwindow.Close(); s.confirmwindow = nil }
 	if !s.ui.IsWindowOpen(s.confirmwindow) {
@@ -444,7 +445,7 @@ func (s *SaveUI) OpenWindows(g *Game, actionf func()) {
 func (l *LoadUI) OpenWindows(g *Game, actionf func(), text string) {
 	var closef *func() = new(func())
 	if l.confirmwindow == nil {
-		l.confirmwindow = createWindow(g, text, actionf, closef) // s.confirmwindow.Close)
+		l.confirmwindow = createWindow(g, text, actionf, closef) // s.confirmwindow.Close
 	}
 	(*closef) = func() { l.confirmwindow.Close(); l.confirmwindow = nil }
 	if !l.ui.IsWindowOpen(l.confirmwindow) {
