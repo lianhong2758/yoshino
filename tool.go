@@ -2,13 +2,16 @@ package yoshino
 
 import (
 	"bytes"
+	"fmt"
+	"image"
 	"image/color"
 	"unsafe"
 
-	"github.com/ebitenui/ebitenui/image"
+	ebimg "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"github.com/nfnt/resize"
 )
 
 type FontSource text.GoTextFaceSource
@@ -29,7 +32,7 @@ func (f *FontSource) Face(size float64) *text.GoTextFace {
 
 // 透明按钮
 func LoadRransparentButtonImage() *widget.ButtonImage {
-	transparentImage := image.NewNineSliceColor(color.RGBA{0, 0, 0, 0})
+	transparentImage := ebimg.NewNineSliceColor(color.RGBA{0, 0, 0, 0})
 	return &widget.ButtonImage{
 		Idle:    transparentImage,
 		Hover:   transparentImage,
@@ -77,11 +80,11 @@ func LoadButtonImageByImage(g *Game, p Player) *widget.GraphicImage {
 
 // 选择窗口的按钮背景,米黄色?
 func LoadConfirmButtonImage() *widget.ButtonImage {
-	idle := image.NewNineSliceColor(color.NRGBA{255, 165, 0, 255})
+	idle := ebimg.NewNineSliceColor(color.NRGBA{255, 165, 0, 255})
 
-	hover := image.NewNineSliceColor(color.NRGBA{255, 140, 0, 255})
+	hover := ebimg.NewNineSliceColor(color.NRGBA{255, 140, 0, 255})
 
-	pressed := image.NewNineSliceColor(color.NRGBA{255, 127, 80, 255})
+	pressed := ebimg.NewNineSliceColor(color.NRGBA{255, 127, 80, 255})
 
 	return &widget.ButtonImage{
 		Idle:    idle,
@@ -135,6 +138,23 @@ func StreamString(b string) func() string {
 	}
 }
 
+// 创建一个函数,以star为开头,逐步增加输出b的函数
+func StreamStringWithString(star, b string) func() string {
+	runes := []rune(b) // 将字符串转为rune切片
+	max := len(runes)  // 实际字符数量
+	current := 0       // 记录当前字符位置
+
+	return func() (bt string) {
+		if current >= max {
+			return fmt.Sprint(star, b) // 超过字符数时直接输出原始字符串
+		}
+		// 输出从开始到当前字符位置的切片
+		bt = string(runes[:current])
+		current++ // 移动到下一个字符位置
+		return fmt.Sprint(star, bt)
+	}
+}
+
 // BytesToString 没有内存开销的转换
 func BytesToString(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
@@ -148,4 +168,15 @@ func StringToBytes(s string) (b []byte) {
 			Cap int
 		}{s, len(s)},
 	))
+}
+
+// 返回指定大小的图片
+func NewImageFromReader(width uint, height uint, imgdata []byte) (*ebiten.Image, error) {
+	img, _, err := image.Decode(bytes.NewReader(imgdata))
+	if err != nil {
+		return nil, err
+	}
+	img = resize.Resize(width, height, img, resize.Bilinear) //改比例
+	img2 := ebiten.NewImageFromImage(img)
+	return img2, err
 }

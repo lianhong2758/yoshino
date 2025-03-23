@@ -10,7 +10,13 @@
         "role": "丛雨",
         "text": "早安早安早安!",
         "avatar": "丛雨头像.jpg",
-        "creation": "",
+        "creation": [
+            {
+                "role": "立绘1.png",
+                "action": "",
+                "a": 100
+            }
+        ],
         "backgroundtype": "image",
         "background": "background.webp",
         "music": "",
@@ -23,7 +29,13 @@
         "role": "丛雨",
         "text": "Ciallo!",
         "avatar": "丛雨头像.jpg",
-        "creation": "",
+        "creation": [
+            {
+                "role": "立绘1.png",
+                "action": "",
+                "a": 100
+            }
+        ],
         "backgroundtype": "image",
         "background": "background.webp",
         "music": "",
@@ -36,7 +48,13 @@
         "role": "丛雨",
         "text": "Ciallo!",
         "avatar": "丛雨头像.jpg",
-        "creation": "",
+        "creation": [
+            {
+                "role": "立绘1.png",
+                "action": "",
+                "a": 100
+            }
+        ],
         "backgroundtype": "image",
         "background": "background.webp",
         "music": "",

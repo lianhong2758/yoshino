@@ -16,12 +16,12 @@ type Repertoire struct {
 	Types          string //剧目类型 A 对话,B CG, C 选择,D 个人线判断
 	Role           string
 	Text           string
-	Avatar         string //头像
-	Creation       string //立绘
-	Background     string //背景
-	BackgroundType string `json:"backgroundtype"`
-	Music          string //背景音乐
-	Video          string //角色语音
+	Avatar         string      //左下角头像,非必须
+	Creation       [3]Creation //立绘,分别对应左中右
+	Background     string      //背景
+	BackgroundType string      `json:"backgroundtype"`
+	Music          string      //背景音乐
+	Video          string      //角色语音
 	Select         []selects
 	Next           string
 	Action         string //保留字段
@@ -34,6 +34,12 @@ type selects struct {
 	Text  string
 	Next  string
 	Token int //作为分支选择的计算令牌
+}
+
+type Creation struct {
+	Role   string
+	Action string //动画效果
+	A      int    //透明度?
 }
 
 var script Script

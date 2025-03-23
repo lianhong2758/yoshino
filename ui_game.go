@@ -1,7 +1,6 @@
 package yoshino
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -17,7 +16,6 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/lianhong2758/yoshino/file"
 )
@@ -38,10 +36,10 @@ type GameUI struct {
 	rep        *Repertoire //当前剧本
 	history    []string    //存放id?还可以扩展语音播放等
 
-	DrawString     func(string) //修改正在显示的文字
-	DrawAvatar     func(string) //修改头像
-	DrawCreation   func(string) //修改立绘
-	DrawBackground func(string) //修改背景
+	DrawString     func(string)      //修改正在显示的文字
+	DrawAvatar     func(string)      //修改头像
+	DrawCreation   func([3]Creation) //修改立绘
+	DrawBackground func(string)      //修改背景
 	PlayMusic      func(string)
 	PlayVideo      func(string)
 
@@ -56,22 +54,33 @@ func (gu *GameUI) Init(g *Game) {
 	FistID = "1" //重置,避免加载存档后利用firstid导致无法开启新游戏
 	gu.needchange = true
 	gu.Background = ebiten.NewImage(1, 1)
+	/*ui
+	  /背景
+	  /立绘
+	  	角色1	角色2	角色3
+
+
+	  /文本区	 【角色名】
+	  头像op   ⌈对话内容⌋
+	  					保存 读取 设置 主菜单
+	*/
 
 	//ui
 	rootContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
+	//文本框区
 	label1 := widget.NewText(
 		widget.TextOpts.Text("", g.FontFace[0].Face(25), color.Black),
-		widget.TextOpts.Position(widget.TextPositionCenter, widget.TextPositionCenter),
+		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionStart),
 		widget.TextOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
 				Position: widget.RowLayoutPositionCenter,
 			}),
 		),
 	)
-
+	//文本栏,设定为底色加文本,左侧可以插入图片,也可为空
 	textbox := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
 			widget.AnchorLayoutOpts.Padding(widget.Insets{
@@ -85,24 +94,57 @@ func (gu *GameUI) Init(g *Game) {
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 				HorizontalPosition: widget.AnchorLayoutPositionCenter,
 				VerticalPosition:   widget.AnchorLayoutPositionEnd,
+				Padding:            widget.Insets{Top: 0},
 			}),
-			widget.WidgetOpts.MinSize(900, 200),
+			widget.WidgetOpts.MinSize(900, 150),
 		),
 	)
 	textbox.AddChild(label1)
 
-	// 角色头像
+	//角色头像区
 	avatar := widget.NewGraphic(
 		widget.GraphicOpts.Image(ebiten.NewImage(1, 1)),
 		widget.GraphicOpts.WidgetOpts(
+
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
 				HorizontalPosition: widget.AnchorLayoutPositionStart,
 				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-			}),
+				Padding:            widget.Insets{Left: 30},
+			},
+			),
 			widget.WidgetOpts.MinSize(100, 100),
 		),
 	)
-	// 主菜单按钮
+
+	//角色立绘区
+	creation := widget.NewContainer(
+		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
+			widget.AnchorLayoutOpts.Padding(widget.Insets{Top: 200}),
+		)),
+		widget.ContainerOpts.WidgetOpts(
+			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+				HorizontalPosition: widget.AnchorLayoutPositionCenter,
+				VerticalPosition:   widget.AnchorLayoutPositionCenter,
+			}),
+			widget.WidgetOpts.MinSize(Width-400, Height-200),
+		),
+	)
+	var tempCreationImage = [3]**ebiten.Image{}
+	for i := range 3 {
+		ct := widget.NewGraphic(
+			widget.GraphicOpts.Image(ebiten.NewImage(1, 1)),
+			widget.GraphicOpts.WidgetOpts(
+				widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
+					HorizontalPosition: widget.AnchorLayoutPosition(i),
+					VerticalPosition:   widget.AnchorLayoutPositionCenter,
+				}),
+				widget.WidgetOpts.MinSize((Width-400)/3, Height-400),
+			),
+		)
+		tempCreationImage[i] = &ct.Image
+		creation.AddChild(ct)
+	}
+	//菜单区
 	buttons := []*widget.Button{
 		widget.NewButton(
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
@@ -192,27 +234,27 @@ func (gu *GameUI) Init(g *Game) {
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
-		widget.NewButton(
-			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-			// specify the button's text, the font face, and the color
-			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("流程", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
-			widget.ButtonOpts.TextProcessBBCode(true),
-			// specify that the button's text needs some padding for correct display
-			widget.ButtonOpts.TextPadding(widget.Insets{
-				Left:   20,
-				Right:  20,
-				Top:    5,
-				Bottom: 5,
-			}),
+		// widget.NewButton(
+		// 	widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+		// 	// specify the button's text, the font face, and the color
+		// 	//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+		// 	widget.ButtonOpts.Text("流程", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+		// 	widget.ButtonOpts.TextProcessBBCode(true),
+		// 	// specify that the button's text needs some padding for correct display
+		// 	widget.ButtonOpts.TextPadding(widget.Insets{
+		// 		Left:   20,
+		// 		Right:  20,
+		// 		Top:    5,
+		// 		Bottom: 5,
+		// 	}),
 
-			// add a handler that reacts to clicking the button
-			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
-				log.Println("流程按钮被点击")
-				g.Next(StatusTree)
-			}),
-			widget.ButtonOpts.DisableDefaultKeys(),
-		),
+		// 	// add a handler that reacts to clicking the button
+		// 	widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+		// 		log.Println("流程按钮被点击")
+		// 		g.Next(StatusTree)
+		// 	}),
+		// 	widget.ButtonOpts.DisableDefaultKeys(),
+		// ),
 		widget.NewButton(
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
@@ -238,7 +280,7 @@ func (gu *GameUI) Init(g *Game) {
 	// 创建网格布局容器（单行）
 	menu := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			widget.GridLayoutOpts.Columns(6),    // 单列布局
+			widget.GridLayoutOpts.Columns(5),    // 单列布局
 			widget.GridLayoutOpts.Spacing(0, 0), // 按钮间距 5px
 		)),
 		widget.ContainerOpts.WidgetOpts(
@@ -255,8 +297,10 @@ func (gu *GameUI) Init(g *Game) {
 		menu.AddChild(v)
 	}
 	// 布局设置
-	rootContainer.AddChild(textbox)
+
+	rootContainer.AddChild(creation)
 	rootContainer.AddChild(avatar)
+	rootContainer.AddChild(textbox)
 	rootContainer.AddChild(menu)
 
 	gu.ui = &ebitenui.UI{
@@ -268,15 +312,26 @@ func (gu *GameUI) Init(g *Game) {
 	gu.DrawString = func(s string) { label1.Label = s }
 	gu.DrawAvatar = func(s string) {
 		if s != "" {
-			avatar.Image, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+			//avatar.Image, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+			avatar.Image, _ = NewImageFromReader(150, 0, file.ReadMaterial(s))
 		} else {
 			avatar.Image = ebiten.NewImage(1, 1)
 		}
 	}
-	gu.DrawCreation = func(s string) {}
+	gu.DrawCreation = func(c [3]Creation) {
+		for i, v := range c {
+			if v.Role != "" {
+				//*tempCreationImage[i], _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(v.Role)))
+				*tempCreationImage[i], _ = NewImageFromReader(300, 0, file.ReadMaterial(v.Role))
+			} else {
+				*tempCreationImage[i] = ebiten.NewImage(1, 1)
+			}
+		}
+	}
 	gu.DrawBackground = func(s string) {
 		if s != "" {
-			gu.Background, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+			//gu.Background, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
+			gu.Background, _ = NewImageFromReader(1600, 0, file.ReadMaterial(s))
 		} else {
 			gu.Background = ebiten.NewImage(1, 1)
 		}
@@ -295,7 +350,7 @@ func (gu *GameUI) Update(g *Game) {
 		gu.history = append(gu.history, gu.rep.ID)
 		switch gu.rep.Types {
 		case "A": //常规类型
-			gu.newString = StreamString(gu.rep.Role + ": " + gu.rep.Text)
+			gu.newString = StreamStringWithString(fmt.Sprintf("【%s】\n", gu.rep.Role), fmt.Sprint("⌈", gu.rep.Text, "⌋"))
 			gu.DrawAvatar(gu.rep.Avatar)
 			gu.DrawCreation(gu.rep.Creation)
 			gu.DrawBackground(gu.rep.Background)
