@@ -40,6 +40,7 @@ type GameUI struct {
 	rep             *Repertoire               //当前剧本
 	history         []string                  //存放id?还可以扩展语音播放等
 	doingTransition bool                      // 用于主UI的过渡动画执行后改变needchange
+	hide            bool                      //隐藏ui
 
 	LoadString     func(string) //修改正在显示的文字
 	LoadAvatar     func(string) //修改头像
@@ -215,11 +216,32 @@ func (gu *GameUI) Init(g *Game) {
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
+		widget.NewButton(
+			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
+			// specify the button's text, the font face, and the color
+			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
+			widget.ButtonOpts.Text("X", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextProcessBBCode(true),
+			// specify that the button's text needs some padding for correct display
+			widget.ButtonOpts.TextPadding(widget.Insets{
+				Left:   20,
+				Right:  20,
+				Top:    5,
+				Bottom: 5,
+			}),
+
+			// add a handler that reacts to clicking the button
+			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
+				log.Println("x按钮被点击")
+				gu.hide = true
+			}),
+			widget.ButtonOpts.DisableDefaultKeys(),
+		),
 	}
 	// 创建网格布局容器（单行）
 	menu := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewGridLayout(
-			widget.GridLayoutOpts.Columns(5),    // 单列布局
+			widget.GridLayoutOpts.Columns(7),    // 单列布局
 			widget.GridLayoutOpts.Spacing(0, 0), // 按钮间距 5px
 		)),
 		widget.ContainerOpts.WidgetOpts(
@@ -321,15 +343,20 @@ func (gu *GameUI) Update(g *Game) {
 		//避免调用按钮时误触
 		mx, my := ebiten.CursorPosition()
 		if mx > 0 && my < Height-30 && gu.historywindow == nil {
-			//判断是否用于跳过逐字输出
-			if !gu.isAllString {
-				gu.isAllString = true
+			//判断是否用于隐藏ui操作的解除
+			if gu.hide {
+				gu.hide = false
 			} else {
-				//之后再用于切换剧目
-				if gu.rep.Transition == "" {
-					gu.doingchange = true
+				//判断是否用于跳过逐字输出
+				if !gu.isAllString {
+					gu.isAllString = true
 				} else {
-					gu.doingTransition = true
+					//之后再用于切换剧目
+					if gu.rep.Transition == "" {
+						gu.doingchange = true
+					} else {
+						gu.doingTransition = true
+					}
 				}
 			}
 		}
@@ -348,6 +375,9 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	}
 	//立绘
 	gu.drawCreation(screen)
+	if gu.hide {
+		return
+	}
 	//word
 	gu.drawString(g, screen)
 	//左下角图标
