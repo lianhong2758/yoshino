@@ -18,7 +18,7 @@
             }
         ],
         "backgroundtype": "image",
-        "background": "background.webp",
+        "background": "background.jpg",
         "music": "",
         "video": "",
         "next": "2"
@@ -37,7 +37,7 @@
             }
         ],
         "backgroundtype": "image",
-        "background": "background.webp",
+        "background": "background.jpg",
         "music": "",
         "video": "",
         "next": "3"
@@ -56,7 +56,7 @@
             }
         ],
         "backgroundtype": "image",
-        "background": "background.webp",
+        "background": "background.jpg",
         "music": "",
         "video": "",
         "next": "4",

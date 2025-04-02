@@ -275,7 +275,7 @@ func (gu *GameUI) Update(g *Game) {
 		gu.history = append(gu.history, gu.rep.ID)
 		switch gu.rep.Types {
 		case "A": //常规类型
-			gu.newString = StreamStringWithString(fmt.Sprintf("【%s】\n", gu.rep.Role), fmt.Sprint("⌈", gu.rep.Text, "⌋"))
+			gu.newString = StreamStringWithString(fmt.Sprintf("【%s】\n", gu.rep.Role), gu.rep.Text)
 			gu.isAllString = false
 			gu.LoadCreation(gu.rep.Creation) //加载立绘
 			gu.LoadAvatar(gu.rep.Avatar)
@@ -363,7 +363,7 @@ func (gu *GameUI) LoadCreation(c [3]Creation) {
 	for i, v := range c {
 		if v.Role != "" {
 			var err error
-			gu.creation[i].Image, err = NewImageFromReader(300, 0, file.ReadMaterial(v.Role))
+			gu.creation[i].Image, err = NewImageFromReader(400, 0, file.ReadMaterial(v.Role))
 			if err != nil {
 				log.Println("Error:", err)
 			}
@@ -419,6 +419,14 @@ func (gu *GameUI) drawCreation(screen *ebiten.Image) {
 
 // 绘制文字和文字背景
 func (gu *GameUI) drawString(g *Game, screen *ebiten.Image) {
+	//文字背景
+	bo := &ebiten.DrawImageOptions{}
+	bo.GeoM.Translate(280, 900-190)
+	bo.ColorScale.ScaleAlpha(0.4) //  // 调整透明度
+	back := ebiten.NewImage(1320, 150)
+	back.Fill(color.RGBA{255, 182, 193, 255})
+	screen.DrawImage(back, bo)
+	//文字
 	op := &text.DrawOptions{}
 	op.GeoM.Translate(300, 900/5*4)
 	op.ColorScale.ScaleWithColor(color.Black)
