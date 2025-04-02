@@ -139,19 +139,19 @@ func StreamString(b string) func() string {
 }
 
 // 创建一个函数,以star为开头,逐步增加输出b的函数
-func StreamStringWithString(star, b string) func() string {
+func StreamStringWithString(star, b string) func(bool) (string, bool) {
 	runes := []rune(b) // 将字符串转为rune切片
 	max := len(runes)  // 实际字符数量
 	current := 0       // 记录当前字符位置
 
-	return func() (bt string) {
-		if current >= max {
-			return fmt.Sprint(star, b) // 超过字符数时直接输出原始字符串
+	return func(isAll bool) (bt string, ok bool) {
+		if current >= max || isAll {
+			return fmt.Sprint(star, b), true // 超过字符数时直接输出原始字符串
 		}
 		// 输出从开始到当前字符位置的切片
 		bt = string(runes[:current])
 		current++ // 移动到下一个字符位置
-		return fmt.Sprint(star, bt)
+		return fmt.Sprint(star, bt), false
 	}
 }
 

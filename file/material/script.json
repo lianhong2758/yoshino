@@ -32,7 +32,7 @@
         "creation": [
             {
                 "role": "立绘1.png",
-                "action": "",
+                "action": "jump",
                 "a": 100
             }
         ],
