@@ -17,33 +17,38 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/lianhong2758/yoshino/file"
 )
 
 var FistID string = "1"
 
 type GameUI struct {
-	ui              *ebitenui.UI
-	Background      *ebiten.Image
+	ui *ebitenui.UI
+	//临时参数,在剧目之间会刷新
+	backgroundImage *ebiten.Image
+	avatarImage     *ebiten.Image
 	selectionwindow *widget.Window
 	historywindow   *widget.Window
 	creation        [3]creationOpt
-	//Words      string       //完整的台词
-	newString   func(bool) (string, bool) //输出的字符串,是否输出全句
-	isAllString bool                      //记录是否输出全句
-	counter     int                       //计数器,逐字打印需要
-	needchange  bool
-	nextid      string      //下一个id
-	rep         *Repertoire //当前剧本
-	history     []string    //存放id?还可以扩展语音播放等
+	newString       func(bool) (string, bool) //输出的字符串,是否输出全句
+	isAllString     bool                      //记录是否输出全句
+	counter         int                       //计数器,逐字打印需要
+	nowWord         string                    //当前显示的对话内容
+	doingchange     bool                      //是否切换下一剧目
+	nextid          string                    //下一个id
+	rep             *Repertoire               //当前剧本
+	history         []string                  //存放id?还可以扩展语音播放等
+	doingTransition bool                      // 用于主UI的过渡动画执行后改变needchange
 
-	DrawString     func(string) //修改正在显示的文字
-	DrawAvatar     func(string) //修改头像
-	DrawBackground func(string) //修改背景
+	LoadString     func(string) //修改正在显示的文字
+	LoadAvatar     func(string) //修改头像
+	LoadBackground func(string) //修改背景
 	PlayMusic      func(string)
 	PlayVideo      func(string)
 
-	DoAction func() //在updata里面执行可能存在的action动画
+	DoAction     [3]func() //在updata里面执行可能存在的action动画
+	DoTransition func(screen *ebiten.Image) bool
 
 	AudioContext *audio.Context
 	MusicPlayer  *audio.Player // 背景音乐播放器
@@ -59,9 +64,9 @@ func (gu *GameUI) Init(g *Game) {
 	ScriptInit()
 	gu.nextid = FistID
 	FistID = "1" //重置,避免加载存档后利用firstid导致无法开启新游戏
-	gu.needchange = true
-	gu.DoAction = nilActionFunc()
-	gu.Background = ebiten.NewImage(1, 1)
+	gu.doingchange = true
+	gu.DoAction = [3]func(){nilActionFunc(), nilActionFunc(), nilActionFunc()}
+	gu.backgroundImage = ebiten.NewImage(1, 1)
 	/*ui
 	  /背景
 	  /立绘
@@ -78,87 +83,6 @@ func (gu *GameUI) Init(g *Game) {
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
 	)
 
-	//文本框区
-	label1 := widget.NewText(
-		widget.TextOpts.Text("", g.FontFace[0].Face(25), color.Black),
-		widget.TextOpts.Position(widget.TextPositionStart, widget.TextPositionStart),
-		widget.TextOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.RowLayoutData{
-				Position: widget.RowLayoutPositionCenter,
-			}),
-		),
-	)
-	//文本栏,设定为底色加文本,左侧可以插入图片,也可为空
-	textbox := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
-			widget.AnchorLayoutOpts.Padding(widget.Insets{
-				Top:    20,
-				Bottom: 20,
-				Left:   20,
-				Right:  20,
-			}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-				Padding:            widget.Insets{Top: 0},
-			}),
-			widget.WidgetOpts.MinSize(900, 150),
-		),
-	)
-	textbox.AddChild(label1)
-
-	//角色头像区
-	avatar := widget.NewGraphic(
-		widget.GraphicOpts.Image(ebiten.NewImage(1, 1)),
-		widget.GraphicOpts.WidgetOpts(
-
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionStart,
-				VerticalPosition:   widget.AnchorLayoutPositionEnd,
-				Padding:            widget.Insets{Left: 30},
-			},
-			),
-			widget.WidgetOpts.MinSize(100, 100),
-		),
-	)
-
-	//角色立绘区
-	creation := widget.NewContainer(
-		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
-			widget.AnchorLayoutOpts.Padding(widget.Insets{Top: 200}),
-		)),
-		widget.ContainerOpts.WidgetOpts(
-			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-				HorizontalPosition: widget.AnchorLayoutPositionCenter,
-				VerticalPosition:   widget.AnchorLayoutPositionCenter,
-			}),
-			widget.WidgetOpts.MinSize(Width-400, Height-200),
-		),
-	)
-	var tempCreation = [3]struct {
-		Creatio *widget.Graphic
-		Padding *widget.Insets
-	}{}
-
-	for i := range 3 {
-		pad := &widget.Insets{}
-		ct := widget.NewGraphic(
-			widget.GraphicOpts.Image(ebiten.NewImage(1, 1)),
-			widget.GraphicOpts.WidgetOpts(
-				widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
-					HorizontalPosition: widget.AnchorLayoutPosition(i),
-					VerticalPosition:   widget.AnchorLayoutPositionCenter,
-					Padding:            *pad,
-				}),
-				widget.WidgetOpts.MinSize((Width-400)/3, Height-400),
-			),
-		)
-		tempCreation[i].Padding = pad
-		tempCreation[i].Creatio = ct
-		creation.AddChild(ct)
-	}
 	//菜单区
 	buttons := []*widget.Button{
 		widget.NewButton(
@@ -313,9 +237,6 @@ func (gu *GameUI) Init(g *Game) {
 	}
 	// 布局设置
 
-	rootContainer.AddChild(creation)
-	rootContainer.AddChild(avatar)
-	rootContainer.AddChild(textbox)
 	rootContainer.AddChild(menu)
 
 	gu.ui = &ebitenui.UI{
@@ -324,21 +245,20 @@ func (gu *GameUI) Init(g *Game) {
 	//time
 	g.startTime = time.Now()
 
-	gu.DrawString = func(s string) { label1.Label = s }
-	gu.DrawAvatar = func(s string) {
+	gu.LoadString = func(s string) { gu.nowWord = s }
+	gu.LoadAvatar = func(s string) {
 		if s != "" {
-			//avatar.Image, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
-			avatar.Image, _ = NewImageFromReader(150, 0, file.ReadMaterial(s))
+			gu.avatarImage, _ = NewImageFromReader(150, 0, file.ReadMaterial(s))
 		} else {
-			avatar.Image = ebiten.NewImage(1, 1)
+			gu.avatarImage = nil
 		}
 	}
-	gu.DrawBackground = func(s string) {
+	gu.LoadBackground = func(s string) {
 		if s != "" {
 			//gu.Background, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
-			gu.Background, _ = NewImageFromReader(1600, 0, file.ReadMaterial(s))
+			gu.backgroundImage, _ = NewImageFromReader(1600, 0, file.ReadMaterial(s))
 		} else {
-			gu.Background = ebiten.NewImage(1, 1)
+			gu.backgroundImage = ebiten.NewImage(1, 1)
 		}
 	}
 	gu.PlayMusic = func(s string) {}
@@ -349,7 +269,7 @@ func (gu *GameUI) Clear(g *Game) {
 	gu.history = []string{}
 }
 func (gu *GameUI) Update(g *Game) {
-	if gu.needchange {
+	if gu.doingchange {
 		//change
 		gu.rep = LoadRepertoire(gu.nextid)
 		gu.history = append(gu.history, gu.rep.ID)
@@ -357,18 +277,17 @@ func (gu *GameUI) Update(g *Game) {
 		case "A": //常规类型
 			gu.newString = StreamStringWithString(fmt.Sprintf("【%s】\n", gu.rep.Role), fmt.Sprint("⌈", gu.rep.Text, "⌋"))
 			gu.isAllString = false
-			gu.loadCreation() //加载立绘
-			gu.DrawAvatar(gu.rep.Avatar)
-			//gu.DrawCreation(gu.rep.Creation)
-			gu.DrawBackground(gu.rep.Background)
+			gu.LoadCreation(gu.rep.Creation) //加载立绘
+			gu.LoadAvatar(gu.rep.Avatar)
+			gu.LoadBackground(gu.rep.Background)
 			gu.PlayMusic(gu.rep.Music)
 			gu.PlayVideo(gu.rep.Video)
-			gu.needchange = false
+			gu.doingchange = false
 			gu.nextid = gu.rep.Next
 		case "B": //CG
 		case "C":
 			//选择界面
-			gu.needchange = false
+			gu.doingchange = false
 			gu.OpenSelectWindows(g)
 		case "D": //个人线判断
 			id := gu.rep.Map[strconv.Itoa(g.Player.Token)]
@@ -379,20 +298,40 @@ func (gu *GameUI) Update(g *Game) {
 			gu.nextid = id
 			return
 		}
+		//过渡动画
+		switch gu.rep.Transition {
+		case "白色渐变":
+			gu.DoTransition = AnimationTransparent(g)
+		default:
+			gu.DoTransition = nil
+		}
+
 	}
-	gu.DoAction()
+	for _, v := range gu.DoAction {
+		v()
+	}
 	gu.counter++
 	if gu.counter == 5 {
 		gu.counter = 0
 		var s string
 		s, gu.isAllString = gu.newString(gu.isAllString)
-		gu.DrawString(s)
+		gu.LoadString(s)
 	}
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		//避免调用按钮时误触
 		mx, my := ebiten.CursorPosition()
 		if mx > 0 && my < Height-30 && gu.historywindow == nil {
-			gu.needchange = true
+			//判断是否用于跳过逐字输出
+			if !gu.isAllString {
+				gu.isAllString = true
+			} else {
+				//之后再用于切换剧目
+				if gu.rep.Transition == "" {
+					gu.doingchange = true
+				} else {
+					gu.doingTransition = true
+				}
+			}
 		}
 	}
 	gu.ui.Update()
@@ -405,17 +344,23 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	//背景
 	switch gu.rep.BackgroundType {
 	case "image":
-		screen.DrawImage(gu.Background, DrawBackgroundOption(gu.Background))
+		screen.DrawImage(gu.backgroundImage, DrawBackgroundOption(gu.backgroundImage))
 	}
 	//立绘
 	gu.drawCreation(screen)
+	//word
+	gu.drawString(g, screen)
+	//左下角图标
+	gu.drawAvatar(screen)
 	//ui
 	gu.ui.Draw(screen)
+	//过渡动画
+	gu.DrawTransition(screen)
 }
 
 // 初始化角色立绘
-func (gu *GameUI) loadCreation() {
-	for i, v := range gu.rep.Creation {
+func (gu *GameUI) LoadCreation(c [3]Creation) {
+	for i, v := range c {
 		if v.Role != "" {
 			var err error
 			gu.creation[i].Image, err = NewImageFromReader(300, 0, file.ReadMaterial(v.Role))
@@ -427,11 +372,11 @@ func (gu *GameUI) loadCreation() {
 			//action
 			switch v.Action {
 			case "":
-				gu.DoAction = nilActionFunc()
+				gu.DoAction[i] = nilActionFunc()
 			case "jump": //内置的jump
 				current := 0 //top相对位置
 				stage := 0   // 0: 0→15, 1:15→-15, 2:-15→0, 3:保持0
-				gu.DoAction = func() {
+				gu.DoAction[i] = func() {
 					switch stage {
 					case 0:
 						current++
@@ -453,6 +398,7 @@ func (gu *GameUI) loadCreation() {
 						}
 						gu.creation[i].O.GeoM.Translate(0, 1)
 					default:
+						gu.DoAction[i] = nilActionFunc() //结束action
 					}
 				}
 			}
@@ -469,9 +415,36 @@ func (gu *GameUI) drawCreation(screen *ebiten.Image) {
 			screen.DrawImage(v.Image, v.O)
 		}
 	}
-
 }
 
+// 绘制文字和文字背景
+func (gu *GameUI) drawString(g *Game, screen *ebiten.Image) {
+	op := &text.DrawOptions{}
+	op.GeoM.Translate(300, 900/5*4)
+	op.ColorScale.ScaleWithColor(color.Black)
+	op.LayoutOptions.LineSpacing = 30
+	text.Draw(screen, gu.nowWord, g.FontFace[0].Face(25), op)
+}
+
+// 绘制左下角图标
+func (gu *GameUI) drawAvatar(screen *ebiten.Image) {
+	if gu.avatarImage == nil {
+		return
+	}
+	op := &ebiten.DrawImageOptions{}
+	op.GeoM.Translate(50, 900-160)
+	screen.DrawImage(gu.avatarImage, op)
+}
+
+// 绘制过渡动画在两个剧目之间
+func (gu *GameUI) DrawTransition(screen *ebiten.Image) {
+	if gu.doingTransition && gu.DoTransition != nil {
+		if ok := gu.DoTransition(screen); ok {
+			//动画播放完毕
+			gu.doingchange = true
+		}
+	}
+}
 func (gu *GameUI) createSelectWindow(g *Game) *widget.Window {
 	// Create the contents of the window
 	windowContainer := widget.NewContainer(
@@ -499,7 +472,7 @@ func (gu *GameUI) createSelectWindow(g *Game) *widget.Window {
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("Select选择了:", v.Text)
 				g.Player.Token += v.Token
-				gu.needchange = true
+				gu.doingchange = true
 				gu.nextid = v.Next
 				gu.selectionwindow.Close()
 			}),
@@ -646,8 +619,8 @@ func (gu *GameUI) createHistoryWindow(g *Game) *widget.Window {
 	)
 }
 
+var nilFunc = func() {}
+
 func nilActionFunc() func() {
-	return func() {
-		//log.Println("执行空action")
-	}
+	return nilFunc
 }

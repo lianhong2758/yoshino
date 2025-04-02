@@ -25,7 +25,7 @@ type Game struct {
 	transition struct {
 		nextfunc func()
 		havetra  bool
-		draw     func(screen *ebiten.Image)
+		draw     func(screen *ebiten.Image) bool
 	}
 	Config *Config
 }
@@ -39,7 +39,10 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	g.GameUI[g.Status].Draw(g, screen)
 	//过渡动画层
 	if g.transition.havetra {
-		g.transition.draw(screen)
+		if ok := g.transition.draw(screen); ok {
+			g.transition.havetra = false
+			g.transition.nextfunc()
+		}
 	}
 	//fps文字图层
 	ebitenutil.DebugPrint(screen, fmt.Sprintf("FPS: %0.2f", ebiten.ActualFPS()))
@@ -68,10 +71,10 @@ func (g *Game) Next(state GameStatus) {
 }
 
 // 插入过渡动画
-func (g *Game) Transition(def func(), draw func(screen *ebiten.Image)) {
+func (g *Game) Transition(def func(), draw func(screen *ebiten.Image) bool) {
 	g.transition = struct {
 		nextfunc func()
 		havetra  bool
-		draw     func(screen *ebiten.Image)
+		draw     func(screen *ebiten.Image) bool
 	}{def, true, draw}
 }

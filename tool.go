@@ -109,7 +109,7 @@ func LoadBlueButtonTextColor() *widget.ButtonTextColor {
 	}
 }
 
-// 绘制背景
+// 绘制背景的默认Option
 func DrawBackgroundOption(img *ebiten.Image) *ebiten.DrawImageOptions {
 	op := &ebiten.DrawImageOptions{}
 	scaleFactor := max(float64(Width)/float64(img.Bounds().Dx()), float64(Height)/float64(img.Bounds().Dy()))
