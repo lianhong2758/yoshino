@@ -40,6 +40,7 @@
         "background": "background.jpg",
         "music": "Flower Dance.mp3",
         "video": "",
+        "transition": "白色渐变",
         "next": "3"
     },
     "3": {

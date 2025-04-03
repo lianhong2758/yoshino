@@ -374,6 +374,7 @@ func (gu *GameUI) Update(g *Game) {
 					if gu.rep.Transition == "" {
 						gu.doingchange = true
 					} else {
+						g.startTime = time.Now() //修正过渡动画的时间
 						gu.doingTransition = true
 					}
 				}
@@ -499,6 +500,7 @@ func (gu *GameUI) DrawTransition(screen *ebiten.Image) {
 		if ok := gu.DoTransition(screen); ok {
 			//动画播放完毕
 			gu.doingchange = true
+			gu.doingTransition = false
 		}
 	}
 }
