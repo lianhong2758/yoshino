@@ -7,7 +7,6 @@ require (
 	github.com/hajimehoshi/ebiten/v2 v2.8.6
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/quasilyte/gdata v0.8.1
-	golang.org/x/image v0.20.0
 )
 
 require (
@@ -18,6 +17,7 @@ require (
 	github.com/go-text/typesetting v0.2.0 // indirect
 	github.com/jezek/xgb v1.1.1 // indirect
 	golang.org/x/exp v0.0.0-20240808152545-0cdaa3abc0fa // indirect
+	golang.org/x/image v0.20.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect
 	golang.org/x/text v0.18.0 // indirect

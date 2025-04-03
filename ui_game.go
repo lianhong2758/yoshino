@@ -9,8 +9,6 @@ import (
 	"strconv"
 	"time"
 
-	_ "golang.org/x/image/webp"
-
 	"github.com/ebitenui/ebitenui"
 	eimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
@@ -41,12 +39,13 @@ type GameUI struct {
 	history         []string                  //存放id?还可以扩展语音播放等
 	doingTransition bool                      // 用于主UI的过渡动画执行后改变needchange
 	hide            bool                      //隐藏ui
+	lastMusic       string                    //上一个背景音乐,用于判断是否切换背景音乐
 
 	LoadString     func(string) //修改正在显示的文字
 	LoadAvatar     func(string) //修改头像
 	LoadBackground func(string) //修改背景
-	PlayMusic      func(string)
-	PlayVideo      func(string)
+	// PlayMusic      func(string)
+	// PlayVideo      func(string)
 
 	DoAction     [3]func() //在updata里面执行可能存在的action动画
 	DoTransition func(screen *ebiten.Image) bool
@@ -68,6 +67,7 @@ func (gu *GameUI) Init(g *Game) {
 	gu.doingchange = true
 	gu.DoAction = [3]func(){nilActionFunc(), nilActionFunc(), nilActionFunc()}
 	gu.backgroundImage = ebiten.NewImage(1, 1)
+	gu.AudioContext = audio.NewContext(48000)
 	/*ui
 	  /背景
 	  /立绘
@@ -283,8 +283,6 @@ func (gu *GameUI) Init(g *Game) {
 			gu.backgroundImage = ebiten.NewImage(1, 1)
 		}
 	}
-	gu.PlayMusic = func(s string) {}
-	gu.PlayVideo = func(s string) {}
 }
 func (gu *GameUI) Clear(g *Game) {
 	gu.selectionwindow = nil
@@ -483,6 +481,40 @@ func (gu *GameUI) DrawTransition(screen *ebiten.Image) {
 		}
 	}
 }
+
+// 播放/切换/停止背景音乐
+func (gu *GameUI) PlayMusic(name string) {
+	if name == "" {
+		gu.lastMusic = ""
+		if gu.MusicPlayer != nil {
+			gu.MusicPlayer.Close()
+		}
+		return
+	}
+	if name != gu.lastMusic {
+		gu.lastMusic = name
+		gu.MusicPlayer = gu.AudioContext.NewPlayerFromBytes(file.ReadMaterial(name))
+		gu.MusicPlayer.Play()
+	}
+	//结束后进入循环
+	if !gu.MusicPlayer.IsPlaying() {
+		gu.MusicPlayer.Play()
+	}
+}
+
+// 播放语音
+func (gu *GameUI) PlayVideo(name string) {
+	if gu.VoicePlayer != nil {
+		gu.VoicePlayer.Close()
+	}
+	if name == "" {
+		return
+	}
+	gu.MusicPlayer = gu.AudioContext.NewPlayerFromBytes(file.ReadMaterial(name))
+	gu.MusicPlayer.Play()
+}
+
+// 创建窗口
 func (gu *GameUI) createSelectWindow(g *Game) *widget.Window {
 	// Create the contents of the window
 	windowContainer := widget.NewContainer(
