@@ -9,6 +9,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/lianhong2758/yoshino"
 	"github.com/lianhong2758/yoshino/file"
+	_ "golang.org/x/image/webp"
 )
 
 func main() {
