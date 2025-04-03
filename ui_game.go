@@ -1,6 +1,7 @@
 package yoshino
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -14,6 +15,7 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
+	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/lianhong2758/yoshino/file"
@@ -67,7 +69,12 @@ func (gu *GameUI) Init(g *Game) {
 	gu.doingchange = true
 	gu.DoAction = [3]func(){nilActionFunc(), nilActionFunc(), nilActionFunc()}
 	gu.backgroundImage = ebiten.NewImage(1, 1)
-	gu.AudioContext = audio.NewContext(48000)
+	if t := audio.CurrentContext(); t == nil {
+		gu.AudioContext = audio.NewContext(48000)
+	} else {
+		gu.AudioContext = t
+	}
+
 	/*ui
 	  /背景
 	  /立绘
@@ -287,6 +294,13 @@ func (gu *GameUI) Init(g *Game) {
 func (gu *GameUI) Clear(g *Game) {
 	gu.selectionwindow = nil
 	gu.history = []string{}
+	if gu.MusicPlayer != nil {
+		gu.MusicPlayer.Close()
+	}
+	if gu.VoicePlayer != nil {
+		gu.VoicePlayer.Close()
+	}
+	gu.AudioContext.IsReady()
 }
 func (gu *GameUI) Update(g *Game) {
 	if gu.doingchange {
@@ -307,6 +321,13 @@ func (gu *GameUI) Update(g *Game) {
 		case "B": //CG
 		case "C":
 			//选择界面
+			gu.newString = StreamStringWithString(fmt.Sprintf("【%s】\n", gu.rep.Role), gu.rep.Text)
+			gu.isAllString = false
+			gu.LoadCreation(gu.rep.Creation) //加载立绘
+			gu.LoadAvatar(gu.rep.Avatar)
+			gu.LoadBackground(gu.rep.Background)
+			gu.PlayMusic(gu.rep.Music)
+			gu.PlayVideo(gu.rep.Video)
 			gu.doingchange = false
 			gu.OpenSelectWindows(g)
 		case "D": //个人线判断
@@ -340,7 +361,7 @@ func (gu *GameUI) Update(g *Game) {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		//避免调用按钮时误触
 		mx, my := ebiten.CursorPosition()
-		if mx > 0 && my < Height-30 && gu.historywindow == nil {
+		if mx > 0 && my < Height-30 && gu.historywindow == nil && gu.selectionwindow == nil {
 			//判断是否用于隐藏ui操作的解除
 			if gu.hide {
 				gu.hide = false
@@ -484,6 +505,7 @@ func (gu *GameUI) DrawTransition(screen *ebiten.Image) {
 
 // 播放/切换/停止背景音乐
 func (gu *GameUI) PlayMusic(name string) {
+	log.Println("playMusic:", name)
 	if name == "" {
 		gu.lastMusic = ""
 		if gu.MusicPlayer != nil {
@@ -493,11 +515,17 @@ func (gu *GameUI) PlayMusic(name string) {
 	}
 	if name != gu.lastMusic {
 		gu.lastMusic = name
-		gu.MusicPlayer = gu.AudioContext.NewPlayerFromBytes(file.ReadMaterial(name))
+		stream, err := mp3.DecodeF32(bytes.NewReader(file.ReadMaterial(name)))
+		if err != nil {
+			log.Println("Error: mp3.DecodeF32 ", err)
+		}
+		gu.MusicPlayer, _ = gu.AudioContext.NewPlayerF32(stream)
+		//gu.MusicPlayer = gu.AudioContext.NewPlayerFromBytes(file.ReadMaterial(name))
 		gu.MusicPlayer.Play()
 	}
 	//结束后进入循环
 	if !gu.MusicPlayer.IsPlaying() {
+		gu.MusicPlayer.Rewind()
 		gu.MusicPlayer.Play()
 	}
 }
@@ -510,7 +538,8 @@ func (gu *GameUI) PlayVideo(name string) {
 	if name == "" {
 		return
 	}
-	gu.MusicPlayer = gu.AudioContext.NewPlayerFromBytes(file.ReadMaterial(name))
+	stream, _ := mp3.DecodeF32(bytes.NewReader(file.ReadMaterial(name)))
+	gu.MusicPlayer, _ = gu.AudioContext.NewPlayerF32(stream)
 	gu.MusicPlayer.Play()
 }
 
@@ -545,6 +574,7 @@ func (gu *GameUI) createSelectWindow(g *Game) *widget.Window {
 				gu.doingchange = true
 				gu.nextid = v.Next
 				gu.selectionwindow.Close()
+				gu.selectionwindow = nil
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		))
@@ -674,7 +704,7 @@ func (gu *GameUI) createHistoryWindow(g *Game) *widget.Window {
 	//Add text to the end of the textarea
 	for _, v := range gu.history {
 		t := LoadRepertoire(v)
-		if t.Types == "A" {
+		if t.Types == "A" || t.Types == "C" {
 			textarea.AppendText(fmt.Sprint("\n", t.Role, ": ", t.Text, "\n"))
 		}
 	}

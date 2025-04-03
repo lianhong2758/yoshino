@@ -19,7 +19,7 @@
         ],
         "backgroundtype": "image",
         "background": "background.jpg",
-        "music": "",
+        "music": "Flower Dance.mp3",
         "video": "",
         "next": "2"
     },
@@ -38,7 +38,7 @@
         ],
         "backgroundtype": "image",
         "background": "background.jpg",
-        "music": "",
+        "music": "Flower Dance.mp3",
         "video": "",
         "next": "3"
     },
@@ -46,7 +46,7 @@
         "id": "3",
         "types": "C",
         "role": "丛雨",
-        "text": "Ciallo!",
+        "text": "选择跳转捏",
         "avatar": "丛雨头像.jpg",
         "creation": [
             {
