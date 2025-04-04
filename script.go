@@ -21,11 +21,11 @@ type Repertoire struct {
 	Background     string      //背景
 	BackgroundType string      `json:"backgroundtype"`
 	Music          string      //背景音乐
-	Video          string      //角色语音
+	Voice          string      //角色语音
 	Select         []selects
 	Next           string
 	//Action         string //全局的action
-	Transition     string //过渡动画
+	Transition string //过渡动画
 	//option
 	Map map[string]string //用于type == case 时存在,用于选择个人线或者后续线路的判断.用法token:id
 }

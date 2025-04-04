@@ -1,9 +1,4 @@
 {
-    "0": {
-        "id": "0",
-        "types": "A",
-        "next": "1"
-    },
     "1": {
         "id": "1",
         "types": "A",
@@ -20,7 +15,7 @@
         "backgroundtype": "image",
         "background": "background.jpg",
         "music": "Flower Dance.mp3",
-        "video": "",
+        "voice": "",
         "next": "2"
     },
     "2": {
@@ -39,7 +34,7 @@
         "backgroundtype": "image",
         "background": "background.jpg",
         "music": "Flower Dance.mp3",
-        "video": "",
+        "voice": "",
         "transition": "白色渐变",
         "next": "3"
     },
@@ -59,7 +54,7 @@
         "backgroundtype": "image",
         "background": "background.jpg",
         "music": "",
-        "video": "",
+        "voice": "",
         "next": "4",
         "select": [
             {

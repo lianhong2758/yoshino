@@ -13,6 +13,7 @@ import (
 	"github.com/ebitenui/ebitenui"
 	eimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
+	"github.com/gen2brain/mpeg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
@@ -43,15 +44,10 @@ type GameUI struct {
 	hide            bool                      //隐藏ui
 	lastMusic       string                    //上一个背景音乐,用于判断是否切换背景音乐
 
-	LoadString     func(string) //修改正在显示的文字
-	LoadAvatar     func(string) //修改头像
-	LoadBackground func(string) //修改背景
-	// PlayMusic      func(string)
-	// PlayVideo      func(string)
-
 	DoAction     [3]func() //在updata里面执行可能存在的action动画
 	DoTransition func(screen *ebiten.Image) bool
 
+	VideoPlayer  *VideoPlayer //视频播放器
 	AudioContext *audio.Context
 	MusicPlayer  *audio.Player // 背景音乐播放器
 	VoicePlayer  *audio.Player // 语音播放器
@@ -273,23 +269,6 @@ func (gu *GameUI) Init(g *Game) {
 	}
 	//time
 	g.startTime = time.Now()
-
-	gu.LoadString = func(s string) { gu.nowWord = s }
-	gu.LoadAvatar = func(s string) {
-		if s != "" {
-			gu.avatarImage, _ = NewImageFromReader(150, 0, file.ReadMaterial(s))
-		} else {
-			gu.avatarImage = nil
-		}
-	}
-	gu.LoadBackground = func(s string) {
-		if s != "" {
-			//gu.Background, _, _ = ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(s)))
-			gu.backgroundImage, _ = NewImageFromReader(1600, 0, file.ReadMaterial(s))
-		} else {
-			gu.backgroundImage = ebiten.NewImage(1, 1)
-		}
-	}
 }
 func (gu *GameUI) Clear(g *Game) {
 	gu.selectionwindow = nil
@@ -315,10 +294,14 @@ func (gu *GameUI) Update(g *Game) {
 			gu.LoadAvatar(gu.rep.Avatar)
 			gu.LoadBackground(gu.rep.Background)
 			gu.PlayMusic(gu.rep.Music)
-			gu.PlayVideo(gu.rep.Video)
+			gu.PlayVideo(gu.rep.Voice)
 			gu.doingchange = false
 			gu.nextid = gu.rep.Next
 		case "B": //CG
+			//gu.LoadBackground(gu.rep.Background)
+			gu.LoadVideo(gu.rep.Background)
+			gu.LoadCreation(gu.rep.Creation) //让立绘为空白
+			gu.hide = true
 		case "C":
 			//选择界面
 			gu.newString = StreamStringWithString(fmt.Sprintf("【%s】\n", gu.rep.Role), gu.rep.Text)
@@ -327,7 +310,7 @@ func (gu *GameUI) Update(g *Game) {
 			gu.LoadAvatar(gu.rep.Avatar)
 			gu.LoadBackground(gu.rep.Background)
 			gu.PlayMusic(gu.rep.Music)
-			gu.PlayVideo(gu.rep.Video)
+			gu.PlayVideo(gu.rep.Voice)
 			gu.doingchange = false
 			gu.OpenSelectWindows(g)
 		case "D": //个人线判断
@@ -392,6 +375,8 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	switch gu.rep.BackgroundType {
 	case "image":
 		screen.DrawImage(gu.backgroundImage, DrawBackgroundOption(gu.backgroundImage))
+	case "mpg":
+		gu.VideoPlayer.Draw(screen, gu.MusicPlayer)
 	}
 	//立绘
 	gu.drawCreation(screen)
@@ -406,6 +391,60 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	gu.ui.Draw(screen)
 	//过渡动画
 	gu.DrawTransition(screen)
+}
+func (gu *GameUI) LoadVideo(name string) {
+	mpg, err := mpeg.New(file.OpenMaterial(name))
+	if err != nil {
+		log.Println("Error:", err)
+		return
+	}
+	if mpg.NumVideoStreams() == 0 {
+		log.Println("Error:", "video: no video streams")
+		return
+	}
+	if !mpg.HasHeaders() {
+		log.Println("Error:", "video: missing headers")
+		return
+	}
+	gu.VideoPlayer = &VideoPlayer{
+		Mpg:        mpg,
+		yCbCrImage: ebiten.NewImage(mpg.Width(), mpg.Height()),
+		yCbCrBytes: make([]byte, 4*mpg.Width()*mpg.Height()),
+		frameImage: ebiten.NewImage(mpg.Width(), mpg.Height()),
+	}
+	s, err := ebiten.NewShader([]byte(`package main
+
+//kage:unit pixels
+
+func Fragment(dstPos vec4, srcPos vec2, color vec4) vec4 {
+	// For this calculation, see the comment in the standard library color.YCbCrToRGB function.
+	c := imageSrc0UnsafeAt(srcPos)
+	return vec4(
+		c.x + 1.40200 * (c.z-0.5),
+		c.x - 0.34414 * (c.y-0.5) - 0.71414 * (c.z-0.5),
+		c.x + 1.77200 * (c.y-0.5),
+		1,
+	)
+}
+`))
+	if err != nil {
+		log.Println("Error:", err)
+		return
+	}
+	gu.VideoPlayer.yCbCrShader = s
+	//将音频流作为背景音乐流播放
+	if gu.AudioContext.SampleRate() != mpg.Samplerate() {
+		log.Printf("Error: 程序音频采样率为%d,但视频采样率为%d", gu.AudioContext.SampleRate(), mpg.Samplerate())
+		return
+	}
+	mpg.SetAudioFormat(mpeg.AudioF32N)
+	log.Println("playMusic:", "video")
+
+	gu.lastMusic = "video"
+	gu.MusicPlayer, _ = gu.AudioContext.NewPlayerF32(&mpegAudio{
+		audio: mpg.Audio(),
+	})
+	gu.MusicPlayer.Play()
 }
 
 // 初始化角色立绘
@@ -456,6 +495,38 @@ func (gu *GameUI) LoadCreation(c [3]Creation) {
 			gu.creation[i].Image = nil
 		}
 	}
+}
+
+// 更改显示的文字
+func (gu *GameUI) LoadString(s string) {
+	gu.nowWord = s
+}
+
+// 更改显示的头像
+func (gu *GameUI) LoadAvatar(s string) {
+	if s != "" {
+		gu.avatarImage, _ = NewImageFromReader(150, 0, file.ReadMaterial(s))
+	} else {
+		gu.avatarImage = nil
+	}
+
+}
+
+// 更改显示的背景
+func (gu *GameUI) LoadBackground(bgName string) {
+	switch gu.rep.BackgroundType {
+	case "image":
+		if bgName != "" {
+			gu.backgroundImage, _ = NewImageFromReader(1600, 0, file.ReadMaterial(bgName))
+		} else {
+			gu.backgroundImage = ebiten.NewImage(1, 1)
+		}
+	case "mpg":
+
+	default:
+		gu.backgroundImage = ebiten.NewImage(1, 1)
+	}
+
 }
 
 // 绘制立绘和action

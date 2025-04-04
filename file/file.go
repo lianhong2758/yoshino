@@ -2,6 +2,7 @@ package file
 
 import (
 	"embed"
+	"io/fs"
 )
 
 //go:embed  MaokenZhuyuanTi.ttf
@@ -15,5 +16,9 @@ var Material embed.FS
 
 func ReadMaterial(name string) (data []byte) {
 	data, _ = Material.ReadFile("material/" + name)
+	return
+}
+func OpenMaterial(name string) (fs fs.File) {
+	fs, _ = Material.Open("material/" + name)
 	return
 }
