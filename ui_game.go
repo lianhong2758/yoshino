@@ -236,7 +236,7 @@ func (gu *GameUI) Init(g *Game) {
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("x按钮被点击")
-				gu.hide = true
+				gu.hide = !gu.hide
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
