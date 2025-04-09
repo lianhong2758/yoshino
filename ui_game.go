@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"log"
 	"os"
 	"strconv"
@@ -13,13 +14,13 @@ import (
 	"github.com/ebitenui/ebitenui"
 	eimage "github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
-	"github.com/gen2brain/mpeg"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/audio"
 	"github.com/hajimehoshi/ebiten/v2/audio/mp3"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/lianhong2758/yoshino/file"
+	"github.com/tinne26/mpegg"
 )
 
 var FistID string = "1"
@@ -47,7 +48,7 @@ type GameUI struct {
 	DoAction     [3]func() //在updata里面执行可能存在的action动画
 	DoTransition func(screen *ebiten.Image) bool
 
-	VideoPlayer  *VideoPlayer //视频播放器
+	VideoPlayer  *mpegg.Player //视频播放器
 	AudioContext *audio.Context
 	MusicPlayer  *audio.Player // 背景音乐播放器
 	VoicePlayer  *audio.Player // 语音播放器
@@ -294,7 +295,7 @@ func (gu *GameUI) Update(g *Game) {
 			gu.LoadAvatar(gu.rep.Avatar)
 			gu.LoadBackground(gu.rep.Background)
 			gu.PlayMusic(gu.rep.Music)
-			gu.PlayVideo(gu.rep.Voice)
+			gu.PlayVoice(gu.rep.Voice)
 			gu.doingchange = false
 			gu.nextid = gu.rep.Next
 		case "B": //CG
@@ -302,6 +303,8 @@ func (gu *GameUI) Update(g *Game) {
 			gu.LoadVideo(gu.rep.Background)
 			gu.LoadCreation(gu.rep.Creation) //让立绘为空白
 			gu.hide = true
+			gu.doingchange = false
+			gu.nextid = gu.rep.Next
 		case "C":
 			//选择界面
 			gu.newString = StreamStringWithString(fmt.Sprintf("【%s】\n", gu.rep.Role), gu.rep.Text)
@@ -310,7 +313,7 @@ func (gu *GameUI) Update(g *Game) {
 			gu.LoadAvatar(gu.rep.Avatar)
 			gu.LoadBackground(gu.rep.Background)
 			gu.PlayMusic(gu.rep.Music)
-			gu.PlayVideo(gu.rep.Voice)
+			gu.PlayVoice(gu.rep.Voice)
 			gu.doingchange = false
 			gu.OpenSelectWindows(g)
 		case "D": //个人线判断
@@ -344,7 +347,7 @@ func (gu *GameUI) Update(g *Game) {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		//避免调用按钮时误触
 		mx, my := ebiten.CursorPosition()
-		if mx > 0 && my < Height-30 && gu.historywindow == nil && gu.selectionwindow == nil {
+		if mx > 0 && my < Height-30 && gu.historywindow == nil && gu.selectionwindow == nil && gu.VideoPlayer == nil {
 			//判断是否用于隐藏ui操作的解除
 			if gu.hide {
 				gu.hide = false
@@ -364,6 +367,12 @@ func (gu *GameUI) Update(g *Game) {
 			}
 		}
 	}
+	//用于判断视频结束后跳转
+	if gu.VideoPlayer != nil && !gu.VideoPlayer.IsPlaying() {
+		gu.doingchange = true
+		gu.CloseVideo()
+		gu.hide = false
+	}
 	gu.ui.Update()
 }
 
@@ -376,75 +385,43 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	case "image":
 		screen.DrawImage(gu.backgroundImage, DrawBackgroundOption(gu.backgroundImage))
 	case "mpg":
-		gu.VideoPlayer.Draw(screen, gu.MusicPlayer)
+		mpegg.Draw(screen, gu.VideoPlayer.CurrentFrame())
 	}
 	//立绘
 	gu.drawCreation(screen)
-	if gu.hide {
-		return
+	if !gu.hide {
+		//word
+		gu.drawString(g, screen)
+		//左下角图标
+		gu.drawAvatar(screen)
+		//ui
+		gu.ui.Draw(screen)
 	}
-	//word
-	gu.drawString(g, screen)
-	//左下角图标
-	gu.drawAvatar(screen)
-	//ui
-	gu.ui.Draw(screen)
 	//过渡动画
 	gu.DrawTransition(screen)
 }
+
 func (gu *GameUI) LoadVideo(name string) {
-	mpg, err := mpeg.New(file.OpenMaterial(name))
+	f := (file.OpenMaterial(name))
+	mpeggPlayer, err := mpegg.NewPlayer(struct {
+		io.Reader
+		io.Seeker
+	}{f, f.(io.Seeker)})
 	if err != nil {
 		log.Println("Error:", err)
 		return
 	}
-	if mpg.NumVideoStreams() == 0 {
-		log.Println("Error:", "video: no video streams")
-		return
-	}
-	if !mpg.HasHeaders() {
-		log.Println("Error:", "video: missing headers")
-		return
-	}
-	gu.VideoPlayer = &VideoPlayer{
-		Mpg:        mpg,
-		yCbCrImage: ebiten.NewImage(mpg.Width(), mpg.Height()),
-		yCbCrBytes: make([]byte, 4*mpg.Width()*mpg.Height()),
-		frameImage: ebiten.NewImage(mpg.Width(), mpg.Height()),
-	}
-	s, err := ebiten.NewShader([]byte(`package main
-
-//kage:unit pixels
-
-func Fragment(dstPos vec4, srcPos vec2, color vec4) vec4 {
-	// For this calculation, see the comment in the standard library color.YCbCrToRGB function.
-	c := imageSrc0UnsafeAt(srcPos)
-	return vec4(
-		c.x + 1.40200 * (c.z-0.5),
-		c.x - 0.34414 * (c.y-0.5) - 0.71414 * (c.z-0.5),
-		c.x + 1.77200 * (c.y-0.5),
-		1,
-	)
+	gu.VideoPlayer = mpeggPlayer
+	gu.VideoPlayer.Play()
 }
-`))
-	if err != nil {
-		log.Println("Error:", err)
-		return
-	}
-	gu.VideoPlayer.yCbCrShader = s
-	//将音频流作为背景音乐流播放
-	if gu.AudioContext.SampleRate() != mpg.Samplerate() {
-		log.Printf("Error: 程序音频采样率为%d,但视频采样率为%d", gu.AudioContext.SampleRate(), mpg.Samplerate())
-		return
-	}
-	mpg.SetAudioFormat(mpeg.AudioF32N)
-	log.Println("playMusic:", "video")
 
-	gu.lastMusic = "video"
-	gu.MusicPlayer, _ = gu.AudioContext.NewPlayerF32(&mpegAudio{
-		audio: mpg.Audio(),
-	})
-	gu.MusicPlayer.Play()
+func (gu *GameUI) CloseVideo() {
+	if gu.VideoPlayer != nil {
+		if gu.VideoPlayer.IsPlaying() {
+			gu.VideoPlayer.Pause()
+		}
+		gu.VideoPlayer = nil
+	}
 }
 
 // 初始化角色立绘
@@ -604,7 +581,7 @@ func (gu *GameUI) PlayMusic(name string) {
 }
 
 // 播放语音
-func (gu *GameUI) PlayVideo(name string) {
+func (gu *GameUI) PlayVoice(name string) {
 	if gu.VoicePlayer != nil {
 		gu.VoicePlayer.Close()
 	}

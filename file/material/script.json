@@ -58,15 +58,27 @@
         "next": "4",
         "select": [
             {
-                "text": "选择1",
+                "text": "选择回到开始",
                 "next": "1",
                 "toekn": 10
             },
             {
-                "text": "选择2",
-                "next": "3",
+                "text": "选择播放OP动画",
+                "next": "4",
                 "toekn": -10
+            },
+            {
+                "text": "选择重复本剧目",
+                "next": "3",
+                "toekn": 0
             }
         ]
+    },
+    "4": {
+        "id": "4",
+        "types": "B",
+        "backgroundtype": "mpg",
+        "background": "op.mpg",
+        "next": "1"
     }
 }
