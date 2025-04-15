@@ -280,7 +280,6 @@ func (gu *GameUI) Clear(g *Game) {
 	if gu.VoicePlayer != nil {
 		gu.VoicePlayer.Close()
 	}
-	gu.AudioContext.IsReady()
 }
 func (gu *GameUI) Update(g *Game) {
 	if gu.doingchange {
@@ -599,8 +598,8 @@ func (gu *GameUI) PlayVoice(name string) {
 		return
 	}
 	stream, _ := mp3.DecodeF32(bytes.NewReader(file.ReadMaterial(name)))
-	gu.MusicPlayer, _ = gu.AudioContext.NewPlayerF32(stream)
-	gu.MusicPlayer.Play()
+	gu.VoicePlayer, _ = gu.AudioContext.NewPlayerF32(stream)
+	gu.VoicePlayer.Play()
 }
 
 // 创建窗口
