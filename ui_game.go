@@ -302,6 +302,8 @@ func (gu *GameUI) Update(g *Game) {
 			//gu.LoadBackground(gu.rep.Background)
 			gu.LoadVideo(gu.rep.Background)
 			gu.LoadCreation(gu.rep.Creation) //让立绘为空白
+			gu.PlayMusic(gu.rep.Music)       //清空播放器或者特殊音效?
+			gu.PlayVoice(gu.rep.Voice)
 			gu.hide = true
 			gu.doingchange = false
 			gu.nextid = gu.rep.Next
@@ -347,7 +349,8 @@ func (gu *GameUI) Update(g *Game) {
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		//避免调用按钮时误触
 		mx, my := ebiten.CursorPosition()
-		if mx > 0 && my < Height-30 && gu.historywindow == nil && gu.selectionwindow == nil && gu.VideoPlayer == nil {
+		if mx > 0 && my < Height-30 &&
+			gu.historywindow == nil && gu.selectionwindow == nil && !gu.doingTransition && gu.VideoPlayer == nil {
 			//判断是否用于隐藏ui操作的解除
 			if gu.hide {
 				gu.hide = false
@@ -364,6 +367,11 @@ func (gu *GameUI) Update(g *Game) {
 						gu.doingTransition = true
 					}
 				}
+			}
+		} else if gu.VideoPlayer != nil {
+			//用于跳过视频
+			if gu.VideoPlayer.IsPlaying() {
+				gu.VideoPlayer.Pause()
 			}
 		}
 	}
@@ -385,7 +393,9 @@ func (gu *GameUI) Draw(g *Game, screen *ebiten.Image) {
 	case "image":
 		screen.DrawImage(gu.backgroundImage, DrawBackgroundOption(gu.backgroundImage))
 	case "mpg":
-		mpegg.Draw(screen, gu.VideoPlayer.CurrentFrame())
+		if gu.VideoPlayer != nil {
+			mpegg.Draw(screen, gu.VideoPlayer.CurrentFrame())
+		}
 	}
 	//立绘
 	gu.drawCreation(screen)
