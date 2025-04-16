@@ -1,7 +1,6 @@
 package yoshino
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"image/color"
@@ -438,7 +437,7 @@ func (gu *GameUI) LoadCreation(c [3]Creation) {
 	for i, v := range c {
 		if v.Role != "" {
 			var err error
-			gu.creation[i].Image, err = NewImageFromReader(400, 0, file.ReadMaterial(v.Role))
+			gu.creation[i].Image, err = NewImageFromReader(400, 0, file.OpenMaterial(v.Role))
 			if err != nil {
 				log.Println("Error:", err)
 			}
@@ -491,7 +490,7 @@ func (gu *GameUI) LoadString(s string) {
 // 更改显示的头像
 func (gu *GameUI) LoadAvatar(s string) {
 	if s != "" {
-		gu.avatarImage, _ = NewImageFromReader(150, 0, file.ReadMaterial(s))
+		gu.avatarImage, _ = NewImageFromReader(150, 0, file.OpenMaterial(s))
 	} else {
 		gu.avatarImage = nil
 	}
@@ -503,7 +502,7 @@ func (gu *GameUI) LoadBackground(bgName string) {
 	switch gu.rep.BackgroundType {
 	case "image":
 		if bgName != "" {
-			gu.backgroundImage, _ = NewImageFromReader(1600, 0, file.ReadMaterial(bgName))
+			gu.backgroundImage, _ = NewImageFromReader(1600, 0, file.OpenMaterial(bgName))
 		} else {
 			gu.backgroundImage = ebiten.NewImage(1, 1)
 		}
@@ -574,12 +573,12 @@ func (gu *GameUI) PlayMusic(name string) {
 	}
 	if name != gu.lastMusic {
 		gu.lastMusic = name
-		stream, err := mp3.DecodeF32(bytes.NewReader(file.ReadMaterial(name)))
+		//	stream, err := mp3.DecodeF32(bytes.NewReader(file.ReadMaterial(name)))
+		stream, err := mp3.DecodeF32(file.OpenMaterial(name))
 		if err != nil {
 			log.Println("Error: mp3.DecodeF32 ", err)
 		}
 		gu.MusicPlayer, _ = gu.AudioContext.NewPlayerF32(stream)
-		//gu.MusicPlayer = gu.AudioContext.NewPlayerFromBytes(file.ReadMaterial(name))
 		gu.MusicPlayer.Play()
 	}
 	//结束后进入循环
@@ -597,7 +596,7 @@ func (gu *GameUI) PlayVoice(name string) {
 	if name == "" {
 		return
 	}
-	stream, _ := mp3.DecodeF32(bytes.NewReader(file.ReadMaterial(name)))
+	stream, _ := mp3.DecodeF32(file.OpenMaterial(name))
 	gu.VoicePlayer, _ = gu.AudioContext.NewPlayerF32(stream)
 	gu.VoicePlayer.Play()
 }

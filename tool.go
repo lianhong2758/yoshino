@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"io"
+	"io/fs"
 	"unsafe"
 
 	ebimg "github.com/ebitenui/ebitenui/image"
@@ -16,7 +18,14 @@ import (
 
 type FontSource text.GoTextFaceSource
 
-func LoadFont(ttf []byte) (f *FontSource, err error) {
+func LoadFont(fns fs.File) (f *FontSource, err error) {
+	gf := new(text.GoTextFaceSource)
+	gf, err = text.NewGoTextFaceSource(fns)
+	f = (*FontSource)(gf)
+	return
+}
+
+func LoadFontFromByte(ttf []byte) (f *FontSource, err error) {
 	gf := new(text.GoTextFaceSource)
 	gf, err = text.NewGoTextFaceSource(bytes.NewReader(ttf))
 	f = (*FontSource)(gf)
@@ -171,8 +180,19 @@ func StringToBytes(s string) (b []byte) {
 }
 
 // 返回指定大小的图片
-func NewImageFromReader(width uint, height uint, imgdata []byte) (*ebiten.Image, error) {
+func NewImageFromByte(width uint, height uint, imgdata []byte) (*ebiten.Image, error) {
 	img, _, err := image.Decode(bytes.NewReader(imgdata))
+	if err != nil {
+		return nil, err
+	}
+	img = resize.Resize(width, height, img, resize.Bilinear) //改比例
+	img2 := ebiten.NewImageFromImage(img)
+	return img2, err
+}
+
+// 返回指定大小的图片
+func NewImageFromReader(width uint, height uint, imgdata io.Reader) (*ebiten.Image, error) {
+	img, _, err := image.Decode(imgdata)
 	if err != nil {
 		return nil, err
 	}

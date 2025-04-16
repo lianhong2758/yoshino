@@ -1,7 +1,6 @@
 package yoshino
 
 import (
-	"bytes"
 	"image/color"
 	"log"
 	"time"
@@ -16,25 +15,27 @@ type TitleUI struct {
 }
 
 func (t *TitleUI) Init(g *Game) {
-	//img, _, err := ebitenutil.NewImageFromFile("../data/title.png")
-	img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial("title.png")))
+	f1 := file.OpenMaterial("title.png")
+	img, _, err := ebitenutil.NewImageFromReader(f1)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer f1.Close()
 	t.TitleFile = append(t.TitleFile, img)
-	//	img2, _, err := ebitenutil.NewImageFromFile("../data/logo.png")
-	img2, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial("logo.png")))
+	f2 := file.OpenMaterial("logo.png")
+	img2, _, err := ebitenutil.NewImageFromReader(f2)
 	if err != nil {
 		log.Println(err)
 		return
 	}
+	defer f2.Close()
 	t.TitleFile = append(t.TitleFile, img2)
 	//加载字体
-	f, _ := LoadFont(file.MaoKenTTF)
-	g.FontFace = append(g.FontFace, f)
-	f2, _ := LoadFont(file.StlitiTTF)
-	g.FontFace = append(g.FontFace, f2)
+	fn, _ := LoadFont(file.OpenMaterial("MaokenZhuyuanTi.ttf"))
+	g.FontFace = append(g.FontFace, fn)
+	fn2, _ := LoadFont(file.OpenMaterial("STLITI.TTF"))
+	g.FontFace = append(g.FontFace, fn2)
 	//计算开屏时间需要
 	g.startTime = time.Now()
 }

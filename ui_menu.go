@@ -1,7 +1,6 @@
 package yoshino
 
 import (
-	"bytes"
 	"image/color"
 	"log"
 	"os"
@@ -22,11 +21,14 @@ type MenuUI struct {
 
 func (m *MenuUI) Init(g *Game) {
 	for _, v := range []string{"menu.jpg"} {
-		img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(v)))
+		//img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(v)))
+		f := file.OpenMaterial(v)
+		img, _, err := ebitenutil.NewImageFromReader(f)
 		if err != nil {
 			log.Println(err)
 			return
 		}
+		defer f.Close()
 		m.MenuFile = append(m.MenuFile, img)
 	}
 	//根容器使用锚点布局
