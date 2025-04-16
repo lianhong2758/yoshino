@@ -24,6 +24,8 @@ import (
 
 var FistID string = "1"
 
+var NilImage = ebiten.NewImage(1, 1)
+
 type GameUI struct {
 	ui *ebitenui.UI
 	//临时参数,在剧目之间会刷新
@@ -64,7 +66,7 @@ func (gu *GameUI) Init(g *Game) {
 	FistID = "1" //重置,避免加载存档后利用firstid导致无法开启新游戏
 	gu.doingchange = true
 	gu.DoAction = [3]func(){nilActionFunc(), nilActionFunc(), nilActionFunc()}
-	gu.backgroundImage = ebiten.NewImage(1, 1)
+	gu.backgroundImage = NilImage 
 	if t := audio.CurrentContext(); t == nil {
 		gu.AudioContext = audio.NewContext(48000)
 	} else {
@@ -504,12 +506,12 @@ func (gu *GameUI) LoadBackground(bgName string) {
 		if bgName != "" {
 			gu.backgroundImage, _ = NewImageFromReader(1600, 0, file.OpenMaterial(bgName))
 		} else {
-			gu.backgroundImage = ebiten.NewImage(1, 1)
+			gu.backgroundImage = NilImage 
 		}
 	case "mpg":
 
 	default:
-		gu.backgroundImage = ebiten.NewImage(1, 1)
+		gu.backgroundImage = NilImage 
 	}
 
 }
