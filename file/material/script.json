@@ -14,7 +14,7 @@
         ],
         "backgroundtype": "image",
         "background": "background.jpg",
-        "music": "Flower Dance.mp3",
+        "music": "",
         "voice": "",
         "next": "2"
     },
@@ -33,7 +33,7 @@
         ],
         "backgroundtype": "image",
         "background": "background.jpg",
-        "music": "Flower Dance.mp3",
+        "music": "",
         "voice": "",
         "transition": "白色渐变",
         "next": "3"
