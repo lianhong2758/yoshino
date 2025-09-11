@@ -31,6 +31,7 @@ type GameUI struct {
 	//临时参数,在剧目之间会刷新
 	backgroundImage *ebiten.Image
 	avatarImage     *ebiten.Image
+	fontbackImage   *ebiten.Image
 	selectionwindow *widget.Window
 	historywindow   *widget.Window
 	creation        [3]creationOpt
@@ -66,7 +67,9 @@ func (gu *GameUI) Init(g *Game) {
 	FistID = "1" //重置,避免加载存档后利用firstid导致无法开启新游戏
 	gu.doingchange = true
 	gu.DoAction = [3]func(){nilActionFunc(), nilActionFunc(), nilActionFunc()}
-	gu.backgroundImage = NilImage 
+	gu.backgroundImage = NilImage
+	gu.fontbackImage = ebiten.NewImage(1320, 150)
+	gu.fontbackImage.Fill(color.RGBA{255, 182, 193, 255})
 	if t := audio.CurrentContext(); t == nil {
 		gu.AudioContext = audio.NewContext(48000)
 	} else {
@@ -202,11 +205,8 @@ func (gu *GameUI) Init(g *Game) {
 		// ),
 		widget.NewButton(
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-			// specify the button's text, the font face, and the color
-			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
 			widget.ButtonOpts.Text("主菜单", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
 			widget.ButtonOpts.TextProcessBBCode(true),
-			// specify that the button's text needs some padding for correct display
 			widget.ButtonOpts.TextPadding(widget.Insets{
 				Left:   20,
 				Right:  20,
@@ -214,7 +214,6 @@ func (gu *GameUI) Init(g *Game) {
 				Bottom: 5,
 			}),
 
-			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("主菜单按钮被点击")
 				g.Next(StatusMenu)
@@ -223,19 +222,14 @@ func (gu *GameUI) Init(g *Game) {
 		),
 		widget.NewButton(
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-			// specify the button's text, the font face, and the color
-			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
 			widget.ButtonOpts.Text("X", g.FontFace[0].Face(20), LoadBlueButtonTextColor()),
 			widget.ButtonOpts.TextProcessBBCode(true),
-			// specify that the button's text needs some padding for correct display
 			widget.ButtonOpts.TextPadding(widget.Insets{
 				Left:   20,
 				Right:  20,
 				Top:    5,
 				Bottom: 5,
 			}),
-
-			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("x按钮被点击")
 				gu.hide = !gu.hide
@@ -506,12 +500,12 @@ func (gu *GameUI) LoadBackground(bgName string) {
 		if bgName != "" {
 			gu.backgroundImage, _ = NewImageFromReader(1600, 0, file.OpenMaterial(bgName))
 		} else {
-			gu.backgroundImage = NilImage 
+			gu.backgroundImage = NilImage
 		}
 	case "mpg":
 
 	default:
-		gu.backgroundImage = NilImage 
+		gu.backgroundImage = NilImage
 	}
 
 }
@@ -531,9 +525,7 @@ func (gu *GameUI) drawString(g *Game, screen *ebiten.Image) {
 	bo := &ebiten.DrawImageOptions{}
 	bo.GeoM.Translate(280, 900-190)
 	bo.ColorScale.ScaleAlpha(0.4) //  // 调整透明度
-	back := ebiten.NewImage(1320, 150)
-	back.Fill(color.RGBA{255, 182, 193, 255})
-	screen.DrawImage(back, bo)
+	screen.DrawImage(gu.fontbackImage, bo)
 	//文字
 	op := &text.DrawOptions{}
 	op.GeoM.Translate(300, 900/5*4)

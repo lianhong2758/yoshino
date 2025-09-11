@@ -4,7 +4,6 @@ import (
 	"image"
 	"log"
 
-	"net/http"
 	_ "net/http/pprof"
 
 	"github.com/hajimehoshi/ebiten/v2"
@@ -15,10 +14,6 @@ import (
 )
 
 func main() {
-	go func() {
-		log.Println(http.ListenAndServe(":6060", nil))
-	}()
-
 	ebiten.SetWindowSize(yoshino.Width, yoshino.Height)
 	ebiten.SetWindowTitle("yoshino(GAL)")
 	iconf := file.OpenMaterial("icon.jpg")
