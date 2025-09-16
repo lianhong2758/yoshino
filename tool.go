@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 	"io"
-	"io/fs"
 	"unsafe"
 
 	ebimg "github.com/ebitenui/ebitenui/image"
@@ -15,29 +14,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"github.com/nfnt/resize"
 )
-
-type FontSource text.GoTextFaceSource
-
-func LoadFont(fns fs.File) (f *FontSource, err error) {
-	gf := new(text.GoTextFaceSource)
-	gf, err = text.NewGoTextFaceSource(fns)
-	f = (*FontSource)(gf)
-	return
-}
-
-func LoadFontFromByte(ttf []byte) (f *FontSource, err error) {
-	gf := new(text.GoTextFaceSource)
-	gf, err = text.NewGoTextFaceSource(bytes.NewReader(ttf))
-	f = (*FontSource)(gf)
-	return
-}
-
-func (f *FontSource) Face(size float64) *text.GoTextFace {
-	return &text.GoTextFace{
-		Source: (*text.GoTextFaceSource)(f),
-		Size:   size,
-	}
-}
 
 // 透明按钮
 func LoadRransparentButtonImage() *widget.ButtonImage {
@@ -50,36 +26,31 @@ func LoadRransparentButtonImage() *widget.ButtonImage {
 }
 
 // left 50
-func LoadNoDataButtonImage(g *Game) *widget.GraphicImage {
+func LoadNoDataButtonImage() *widget.GraphicImage {
 	img := ebiten.NewImage(300, 200)
 	img.Fill(color.RGBA{255, 235, 205, 255})
 	op := &text.DrawOptions{}
 	op.GeoM.Translate((300-200)/2, (200-40)/2)
 	op.ColorScale.ScaleWithColor(color.RGBA{135, 206, 250, 255})
-	text.Draw(img, "No Data", g.FontFace[0].Face(40), op)
+	text.Draw(img, "No Data", StdFonts[0].Face(40), op)
 	return &widget.GraphicImage{
 		Idle:    img,
 		Hover:   img,
 		Pressed: img,
 	}
 }
-
-func LoadButtonImageByImage(g *Game, p Player) *widget.GraphicImage {
+func LoadButtonImageByImage(imgi *ebiten.Image) *widget.GraphicImage {
 	img := ebiten.NewImage(300, 200)
 	img.Fill(color.RGBA{255, 235, 205, 255})
-	// op := &text.DrawOptions{}
-	// op.GeoM.Translate((300-200)/2, (200-40)/2)
-	// op.ColorScale.ScaleWithColor(color.RGBA{135, 206, 250, 255})
-	// text.Draw(img, "No Data", g.FontFace[0].Face(40), op)
 	//260宽
 	var op = &ebiten.DrawImageOptions{}
-	scaleFactor := 260 / float64(p.screenEbitenImage.Bounds().Dx())
+	scaleFactor := 260 / float64(imgi.Bounds().Dx())
 	op.GeoM.Scale(scaleFactor, scaleFactor)
 	op.GeoM.Translate(
-		(300-(float64(p.screenEbitenImage.Bounds().Dx())*scaleFactor))/2,
-		(300-(float64(p.screenEbitenImage.Bounds().Dx())*scaleFactor))/2,
+		(300-(float64(imgi.Bounds().Dx())*scaleFactor))/2,
+		(300-(float64(imgi.Bounds().Dx())*scaleFactor))/2,
 	)
-	img.DrawImage(p.screenEbitenImage, op)
+	img.DrawImage(imgi, op)
 	return &widget.GraphicImage{
 		Idle:    img,
 		Hover:   img,

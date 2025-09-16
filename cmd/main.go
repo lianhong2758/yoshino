@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/joelschutz/stagehand"
 	"github.com/lianhong2758/yoshino"
 	"github.com/lianhong2758/yoshino/file"
 	_ "golang.org/x/image/webp"
@@ -16,6 +17,7 @@ import (
 func main() {
 	ebiten.SetWindowSize(yoshino.Width, yoshino.Height)
 	ebiten.SetWindowTitle("yoshino(GAL)")
+	ebiten.SetTPS(60)
 	iconf := file.OpenMaterial("icon.jpg")
 	icon, _, err := ebitenutil.NewImageFromReader(iconf)
 	if err != nil {
@@ -24,7 +26,7 @@ func main() {
 		ebiten.SetWindowIcon([]image.Image{icon})
 	}
 	iconf.Close()
-	if err := ebiten.RunGame(yoshino.NewGame()); err != nil {
+	if err := ebiten.RunGame(stagehand.NewSceneManager(&yoshino.TitleUI{}, yoshino.State{})); err != nil {
 		log.Fatal(err)
 	}
 }

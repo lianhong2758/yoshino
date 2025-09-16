@@ -8,29 +8,46 @@ import (
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"github.com/lianhong2758/yoshino/file"
+	"github.com/joelschutz/stagehand"
 )
 
 type MenuUI struct {
-	ui       *ebitenui.UI
-	btns     []*widget.Button //预定5个
-	MenuFile []*ebiten.Image
+	BaseScene
+	ui   *ebitenui.UI
+	btns []*widget.Button //预定5个
 }
 
-func (m *MenuUI) Init(g *Game) {
-	for _, v := range []string{"menu.jpg"} {
-		//img, _, err := ebitenutil.NewImageFromReader(bytes.NewReader(file.ReadMaterial(v)))
-		f := file.OpenMaterial(v)
-		img, _, err := ebitenutil.NewImageFromReader(f)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		defer f.Close()
-		m.MenuFile = append(m.MenuFile, img)
-	}
+func (m *MenuUI) Load(st State, sm stagehand.SceneController[State]) {
+	m.State = State{Page: PageMenu}
+	m.sm = sm.(*stagehand.SceneManager[State])
+	StdImagePool.LoadImage("menu", "menu.jpg")
+	m.makeui()
+}
+
+func (m *MenuUI) Unload() State {
+	StdImagePool.Clear()
+	m.btns = []*widget.Button{}
+	m.ui = nil
+	return m.State
+}
+
+func (m *MenuUI) Update() error {
+	m.ui.Update()
+	return nil
+}
+
+func (m *MenuUI) Draw(screen *ebiten.Image) {
+	//background
+	screen.DrawImage(StdImagePool.GetImage("menu"), DrawBackgroundOption(StdImagePool.GetImage("menu")))
+	op := &text.DrawOptions{}
+	op.GeoM.Translate(200, 100)
+	op.ColorScale.ScaleWithColor(color.RGBA{32, 178, 170, 240})
+	text.Draw(screen, "Yoshino", StdFonts[1].Face(150), op)
+
+	m.ui.Draw(screen)
+}
+func (m *MenuUI) makeui() {
 	//根容器使用锚点布局
 	rootContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout()),
@@ -40,11 +57,8 @@ func (m *MenuUI) Init(g *Game) {
 		//开始游戏
 		widget.NewButton(
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
-			// specify the button's text, the font face, and the color
-			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("新的游戏", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
-			// specify that the button's text needs some padding for correct display
-			widget.ButtonOpts.TextPadding(widget.Insets{
+			widget.ButtonOpts.Text("新的游戏", StdFonts[0].FacePointer(35), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.TextPadding(&widget.Insets{
 				Left:   30,
 				Right:  30,
 				Top:    5,
@@ -52,20 +66,19 @@ func (m *MenuUI) Init(g *Game) {
 			}),
 			//Move the text down and right on press
 			widget.ButtonOpts.PressedHandler(func(args *widget.ButtonPressedEventArgs) {
-				m.btns[0].Text().Inset.Top = 4
-				m.btns[0].Text().Inset.Left = 4
+				m.btns[0].Text().SetPadding(&widget.Insets{Top: 4, Left: 4})
 			}),
 			//Move the text back to start on press released
 			widget.ButtonOpts.ReleasedHandler(func(args *widget.ButtonReleasedEventArgs) {
-				m.btns[0].Text().Inset.Top = 0
-				m.btns[0].Text().Inset.Left = 0
+				m.btns[0].Text().SetPadding(&widget.Insets{Top: 0, Left: 0})
 			}),
 
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("新的游戏")
+				m.sm.SwitchTo(&GameUI{Player: Player{ID: "1"}})
 				//g.Next(StatusGame)
-				g.Transition(func() { g.Next(StatusGame) }, AnimationTransparent(g))
+				//g.Transition(func() { g.Next(StatusGame) }, AnimationTransparent(g))
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
@@ -74,9 +87,9 @@ func (m *MenuUI) Init(g *Game) {
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
 			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("加载游戏", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.Text("加载游戏", StdFonts[0].FacePointer(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
-			widget.ButtonOpts.TextPadding(widget.Insets{
+			widget.ButtonOpts.TextPadding(&widget.Insets{
 				Left:   30,
 				Right:  30,
 				Top:    5,
@@ -84,19 +97,18 @@ func (m *MenuUI) Init(g *Game) {
 			}),
 			//Move the text down and right on press
 			widget.ButtonOpts.PressedHandler(func(args *widget.ButtonPressedEventArgs) {
-				m.btns[1].Text().Inset.Top = 4
-				m.btns[1].Text().Inset.Left = 4
+				m.btns[1].Text().SetPadding(&widget.Insets{Top: 4, Left: 4})
 			}),
 			//Move the text back to start on press released
 			widget.ButtonOpts.ReleasedHandler(func(args *widget.ButtonReleasedEventArgs) {
-				m.btns[1].Text().Inset.Top = 0
-				m.btns[1].Text().Inset.Left = 0
+				m.btns[1].Text().SetPadding(&widget.Insets{Top: 0, Left: 0})
 			}),
 
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("加载游戏")
-				g.Next(StatusLoad)
+				//g.Next(StatusLoad)
+				m.sm.SwitchTo(&LoadUI{})
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
@@ -105,9 +117,9 @@ func (m *MenuUI) Init(g *Game) {
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
 			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("设置", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.Text("设置", StdFonts[0].FacePointer(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
-			widget.ButtonOpts.TextPadding(widget.Insets{
+			widget.ButtonOpts.TextPadding(&widget.Insets{
 				Left:   30,
 				Right:  30,
 				Top:    5,
@@ -115,19 +127,17 @@ func (m *MenuUI) Init(g *Game) {
 			}),
 			//Move the text down and right on press
 			widget.ButtonOpts.PressedHandler(func(args *widget.ButtonPressedEventArgs) {
-				m.btns[2].Text().Inset.Top = 4
-				m.btns[2].Text().Inset.Left = 4
+				m.btns[2].Text().SetPadding(&widget.Insets{Top: 4, Left: 4})
 			}),
 			//Move the text back to start on press released
 			widget.ButtonOpts.ReleasedHandler(func(args *widget.ButtonReleasedEventArgs) {
-				m.btns[2].Text().Inset.Top = 0
-				m.btns[2].Text().Inset.Left = 0
+				m.btns[2].Text().SetPadding(&widget.Insets{Top: 0, Left: 0})
 			}),
 
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("设置")
-				g.Next(StatusSetting)
+				//	g.Next(StatusSetting)
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
@@ -136,9 +146,9 @@ func (m *MenuUI) Init(g *Game) {
 			widget.ButtonOpts.Image(LoadRransparentButtonImage()),
 			// specify the button's text, the font face, and the color
 			//widget.ButtonOpts.Text("Hello, World!", face, &widget.ButtonTextColor{
-			widget.ButtonOpts.Text("退出游戏", g.FontFace[0].Face(35), LoadBlueButtonTextColor()),
+			widget.ButtonOpts.Text("退出游戏", StdFonts[0].FacePointer(35), LoadBlueButtonTextColor()),
 			// specify that the button's text needs some padding for correct display
-			widget.ButtonOpts.TextPadding(widget.Insets{
+			widget.ButtonOpts.TextPadding(&widget.Insets{
 				Left:   30,
 				Right:  30,
 				Top:    5,
@@ -146,19 +156,19 @@ func (m *MenuUI) Init(g *Game) {
 			}),
 			//Move the text down and right on press
 			widget.ButtonOpts.PressedHandler(func(args *widget.ButtonPressedEventArgs) {
-				m.btns[3].Text().Inset.Top = 4
-				m.btns[3].Text().Inset.Left = 4
+				m.btns[3].Text().SetPadding(&widget.Insets{Top: 4, Left: 4})
+
 			}),
 			//Move the text back to start on press released
 			widget.ButtonOpts.ReleasedHandler(func(args *widget.ButtonReleasedEventArgs) {
-				m.btns[3].Text().Inset.Top = 0
-				m.btns[3].Text().Inset.Left = 0
+				m.btns[3].Text().SetPadding(&widget.Insets{Top: 0, Left: 0})
+
 			}),
 
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("退出游戏")
-				g.Transition(func() { os.Exit(0) }, AnimationTransparent(g))
+				os.Exit(0)
 			}),
 			widget.ButtonOpts.DisableDefaultKeys(),
 		),
@@ -181,7 +191,7 @@ func (m *MenuUI) Init(g *Game) {
 	// 创建锚点布局容器（用于定位到左侧）
 	anchorContainer := widget.NewContainer(
 		widget.ContainerOpts.Layout(widget.NewAnchorLayout(
-			widget.AnchorLayoutOpts.Padding(widget.Insets{Left: 150}),
+			widget.AnchorLayoutOpts.Padding(&widget.Insets{Left: 150}),
 		)),
 		widget.ContainerOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.AnchorLayoutData{
@@ -194,31 +204,4 @@ func (m *MenuUI) Init(g *Game) {
 	m.ui = &ebitenui.UI{
 		Container: rootContainer,
 	}
-
-}
-func (m *MenuUI) Clear(g *Game) {
-	m.MenuFile = []*ebiten.Image{}
-	m.btns = []*widget.Button{}
-	m.ui = nil
-}
-func (m *MenuUI) Update(g *Game) { m.ui.Update() }
-func (m *MenuUI) Draw(g *Game, screen *ebiten.Image) {
-	//背景图层
-	screen.DrawImage(m.MenuFile[0], DrawBackgroundOption(m.MenuFile[0]))
-	// //标题
-	// op := &ebiten.DrawImageOptions{}
-	// scaleFactor := float64(Width/3) / float64(m.MenuFile[1].Bounds().Dx())
-	// op.GeoM.Scale(scaleFactor, scaleFactor)
-	// op.GeoM.Translate(
-	// 	200, 100,
-	// )
-	// op.ColorScale.ScaleAlpha(0.8) //  // 调整透明度
-	// screen.DrawImage(m.MenuFile[1], op)
-
-	op := &text.DrawOptions{}
-	op.GeoM.Translate(200, 100)
-	op.ColorScale.ScaleWithColor(color.RGBA{32, 178, 170, 240})
-	text.Draw(screen, "Yoshino", g.FontFace[1].Face(150), op)
-
-	m.ui.Draw(screen)
 }

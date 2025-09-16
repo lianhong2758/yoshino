@@ -15,12 +15,10 @@ import (
 // }
 
 type Player struct {
-	Token             int
 	ID                string
-	CGUnlock          string
 	ScreenData        []byte
+	Data              map[string]int
 	screenEbitenImage *ebiten.Image
-	//screenContent     image.Image //因为画布的一致性,所以不能长期保留,直接删除
 }
 
 func (p *Player) Load(path string) {

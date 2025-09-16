@@ -25,9 +25,9 @@ type Repertoire struct {
 	Select         []selects
 	Next           string
 	//Action         string //全局的action
-	Transition string //过渡动画
+	//Transition string //过渡动画
 	//option
-	Map map[string]string //用于type == case 时存在,用于选择个人线或者后续线路的判断.用法token:id
+	//Map map[string]string //用于type == case 时存在,用于选择个人线或者后续线路的判断.用法token:id
 }
 
 // 选择分支
