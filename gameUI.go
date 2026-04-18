@@ -6,6 +6,8 @@ import (
 	"image/color"
 	"io"
 	"log"
+	"maps"
+	"os"
 	"strconv"
 
 	"github.com/ebitenui/ebitenui"
@@ -126,13 +128,13 @@ func (g *GameUI) Update() error {
 			g.doingchange = false
 			g.OpenSelectWindows()
 		case "D": //个人线判断
-			// id := g.rep.Map[strconv.Itoa(g.Player.Token)]
-			// if id == "" {
-			// 	log.Print("存档损坏")
-			// 	os.Exit(1)
-			// }
-			// g.nextid = id
-			// return
+			id := g.Player.GetSelectNext(g.rep.CaseMap)
+			if id == "" {
+				log.Print("存档损坏")
+				os.Exit(1)
+			}
+			g.nextid = id
+			return nil
 		}
 
 	}
@@ -378,7 +380,7 @@ func (g *GameUI) createSelectWindow() *widget.Window {
 			// add a handler that reacts to clicking the button
 			widget.ButtonOpts.ClickedHandler(func(args *widget.ButtonClickedEventArgs) {
 				log.Println("Select选择了:", v.Text)
-				//	g.Player.Token += v.Token
+				maps.Copy(g.Player.Data,v.Key)
 				g.doingchange = true
 				g.nextid = v.Next
 				g.selectionwindow.Close()
